@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Article } from '~/types/database'
+import type { PublicArticle } from '~/features/articles/use-public-articles'
 
 useSeoMeta({
   title: 'Beranda - Portal Resmi Organisasi Mahasiswa',
@@ -38,24 +38,10 @@ useSeoMeta({
     'ormawa ut surabaya, universitas terbuka surabaya, ukm ut surabaya, himpunan mahasiswa ut surabaya, kkb ut surabaya, osmb ut surabaya 2026',
 })
 
-const { getPublishedArticles } = useArticles()
-
-const articles = ref<Article[]>([])
-const is_loading = ref<boolean>(true)
+// [S6] Diambil di server (SSR) — HTML awal sudah berisi artikel.
+const { data: articles, pending: is_loading } = await usePublicArticles()
 
 // 3 terbaru jadi highlight, sisanya di daftar "Semua Berita"
-const highlight_articles = computed<Article[]>(() => articles.value.slice(0, 3))
-const regular_articles = computed<Article[]>(() => articles.value.slice(3))
-
-onMounted(async () => {
-  is_loading.value = true
-  try {
-    articles.value = await getPublishedArticles()
-  } catch (error) {
-    console.error('Gagal mengambil artikel publik:', error)
-    articles.value = []
-  } finally {
-    is_loading.value = false
-  }
-})
+const highlight_articles = computed<PublicArticle[]>(() => articles.value.slice(0, 3))
+const regular_articles = computed<PublicArticle[]>(() => articles.value.slice(3))
 </script>

@@ -8,9 +8,16 @@
 import type { Timestamp } from '~/types/database'
 
 /**
+ * Zona waktu tampilan tanggal. [S6] Halaman publik kini dirender di server
+ * (UTC di Firebase Functions); tanpa zona eksplisit tanggal bisa mundur satu
+ * hari dan berbeda dengan hasil render di browser (hydration mismatch).
+ */
+export const SITE_TIME_ZONE = 'Asia/Jakarta'
+
+/**
  * Tanggal artikel gaya Indonesia. `month: 'short'` → "01 Jan 2026"
  * (beranda, daftar artikel); `'long'` → "01 Januari 2026" (detail berita).
- * Nilai tidak valid → "—".
+ * Nilai tidak valid → "—". Selalu dalam WIB (SITE_TIME_ZONE).
  */
 export function formatArticleDate(
   timestamp: Timestamp | string | Date | null | undefined,
@@ -27,7 +34,12 @@ export function formatArticleDate(
 
   if (!date || Number.isNaN(date.getTime())) return '—'
 
-  return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month, year: 'numeric' }).format(date)
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month,
+    year: 'numeric',
+    timeZone: SITE_TIME_ZONE,
+  }).format(date)
 }
 
 /** Buang tag HTML untuk cuplikan teks. */

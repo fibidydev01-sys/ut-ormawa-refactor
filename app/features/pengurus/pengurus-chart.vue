@@ -4,35 +4,27 @@
 -->
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed } from 'vue'
+import { SITE_TIME_ZONE } from '~/features/articles'
 import type { PengurusMember, BidangItem } from '~/features/pengurus'
 import { getAccentTextClass, getLineClass, getRingStyle } from './pengurus-colors'
 
-const { getStruktur } = usePengurus()
+// [S6] Diambil di server (SSR) — HTML awal sudah berisi struktur pengurus.
+const { data: struktur, pending: isLoading } = await usePublicPengurus()
+const bph = computed<PengurusMember[]>(() => struktur.value.bph || [])
+const bidang = computed<BidangItem[]>(() => struktur.value.bidang || [])
 
-const isLoading = ref(true)
-const bph = ref<PengurusMember[]>([])
-const bidang = ref<BidangItem[]>([])
-const updatedAt = ref('')
-
-onMounted(async () => {
-  try {
-    const data = await getStruktur()
-    bph.value = data.bph || []
-    bidang.value = data.bidang || []
-    if (data.updated_at?.toDate) {
-      updatedAt.value = data.updated_at.toDate().toLocaleDateString('id-ID', {
+/** "1 Januari 2026" dalam WIB (sama dengan render server & browser). */
+const updatedAt = computed(() =>
+  struktur.value.updated_at
+    ? new Date(struktur.value.updated_at).toLocaleDateString('id-ID', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
+        timeZone: SITE_TIME_ZONE,
       })
-    }
-  } catch (e) {
-    console.error('[struktur-pengurus] Gagal memuat data:', e)
-  } finally {
-    isLoading.value = false
-  }
-})
+    : '',
+)
 </script>
 
 <template>

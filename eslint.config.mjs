@@ -48,5 +48,15 @@ export default createConfigForNuxt({
   })
   .append({
     name: 'ormawa/ignores',
-    ignores: ['.output/**', '.nuxt/**', 'node_modules/**', 'public/**', 'scripts/legacy/**'],
+    ignores: [
+      '.output/**',
+      '.nuxt/**',
+      'node_modules/**',
+      'public/**',
+      'scripts/legacy/**',
+      // @nuxt/eslint-config mengabaikan setiap folder bernama "public" (**/public);
+      // API publik di server/api/public tetap harus di-lint.
+      '!server/api/public',
+      '!server/api/public/**',
+    ],
   })

@@ -11,6 +11,7 @@ import { seedUser, seedOrganization, loginAdmin, eventually, assert } from './he
 import { ARTICLE_SCENARIOS } from './scenarios-articles.mjs'
 import { ADMIN_SCENARIOS } from './scenarios-admin.mjs'
 import { MAHASISWA_SCENARIOS } from './scenarios-mahasiswa.mjs'
+import { RENDERING_SCENARIOS } from './scenarios-rendering.mjs'
 
 /** PNG 1×1 untuk uji upload ke Storage Emulator. */
 export const PNG_1PX = {
@@ -261,4 +262,5 @@ export const SCENARIOS = [
   ...ARTICLE_SCENARIOS,
   ...ADMIN_SCENARIOS,
   ...MAHASISWA_SCENARIOS,
+  ...RENDERING_SCENARIOS,
 ]

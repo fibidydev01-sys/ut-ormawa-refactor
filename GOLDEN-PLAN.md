@@ -839,6 +839,15 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 - `routeRules` sesuai §5; data publik via `useAsyncData` + `server/api/public/*` (read-only, Admin SDK).
 - `useSeoMeta` per page (isi meta lama).
 - **DoD:** view-source `/berita/<slug>` berisi konten; header cache sesuai; dashboard tetap SPA; sitemap sama.
+- **Catatan hasil S6:**
+  - **ISR = header CDN**, bukan `swr` Nitro: `cache-control: public, max-age=0, s-maxage=N, stale-while-revalidate=86400` disimpan CDN Firebase Hosting. Cache memori Nitro di Cloud Functions hilang tiap instance mati, dan di server lokal/tes (tanpa CDN) data tetap segar. Konsekuensi: artikel baru tampil di `/beranda` paling lambat **10 menit** (`/berita` & struktur pengurus 1 jam) — perlu diketahui admin.
+  - **SSG** via `prerender: true` + `nitro.prerender.crawlLinks: false` → 14 halaman statis di `.output/public` (disajikan langsung Hosting).
+  - **Data publik di server:** `GET /api/public/articles` & `/api/public/pengurus` (Admin SDK, filter `PUBLISHED` eksplisit karena Admin SDK melewati rules); komponen memakai `usePublicArticles()` / `usePublicPengurus()` (`useFetch`). Tanpa kredensial Admin (`isFirebaseAdminConfigured()`), API langsung mengembalikan data kosong.
+  - **Zona waktu:** tanggal di halaman publik kini dirender server (UTC) → `formatArticleDate` & tanggal struktur pengurus dikunci `Asia/Jakarta` (`SITE_TIME_ZONE`); diuji E2E dengan artikel 23:30 UTC → "02 Mar".
+  - **Dashboard SPA** → `/dashboard/*` langsung 200 (dulu 302 setelah 5,1 s), halaman bisa di-refresh tanpa dilempar ke login (T16).
+  - `X-Robots-Tag: noindex, nofollow` untuk `/login/**`, `/dashboard/**`, `/sandbox`; `/` & `/profil` redirect **301** di server.
+  - `@nuxt/eslint-config` mengabaikan semua folder bernama `public`; `server/api/public` di-un-ignore di `eslint.config.mjs`.
+  - Route baseline diperbarui: +2 API (disetujui rencana S6).
 
 #### S7 · Session cookie `__session`
 - `server/api/auth/session.{post,delete}.ts`, `auth/me.get.ts`, `server/middleware/session.ts`, `server/utils/{session,requireRole}.ts`, `plugins/auth-session.server.ts`.
@@ -942,7 +951,7 @@ Yang paling mendesak (perlu hotfix di produksi, tidak menunggu refactor):
 | S3 | Feature data layer | ✅ | 2026-11-01 | — | 6 composable lama → `features/{articles,organizations,pengurus,users,auth}` (service + `use-*.ts` + `index.ts`) + `composables/use-{firebase,upload}.ts` + `services/storage.ts`; 0 import `firebase/*` di pages/components/layouts; E2E Firebase Emulator 17 skenario + 71 screenshot identik; typecheck 19 → 17 |
 | S4 | Pecah pages publik | ✅ | 2026-11-01 | — | 19 page publik → shell ≤ 61 baris (total 448 baris, dulu ±4.400); 41 komponen fitur ≤ 250 baris + `*.data.ts` + CSS besar via `<style scoped src>`; screenshot 73/73 identik (+ skenario modal Cari Teman, baseline dari build lama); E2E 17/17; typecheck 17 → 14 |
 | S5 | Pecah pages auth & dashboard | ✅ | 2026-11-01 | — | 13 page auth/dashboard → shell (semua 33 page total 572 baris, dulu ±10.400); komponen ≤ 249 baris; `app/` 0 error lint & 0 error TypeScript (sisa 6 error & 15 warning hanya di `server/` + plugin analytics); screenshot 73/73, E2E 17/17 di setiap langkah |
-| S6 | routeRules + SSR data publik | ⬜ | | | |
+| S6 | routeRules + SSR data publik | ✅ | 2026-11-01 | — | 14 halaman SSG; /beranda, /media/artikel, /berita, /profil/struktur-pengurus SSR + cache CDN (`s-maxage`); dashboard & sandbox SPA (T16 ✅); `/api/public/{articles,pengurus}`; tanggal publik dikunci WIB; E2E 21/21, screenshot 73/73 |
 | S7 | Session cookie `__session` | ⬜ | | | |
 | S8 | Tombol Dashboard + Cookie Consent | ⬜ | | | |
 | S9 | Tailwind v4 + Kliping init | ⬜ | | | |

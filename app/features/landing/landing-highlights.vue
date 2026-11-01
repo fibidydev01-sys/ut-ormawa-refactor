@@ -4,10 +4,10 @@
 -->
 
 <script setup lang="ts">
-import type { Article } from '~/types/database'
+import type { PublicArticle } from '~/features/articles/use-public-articles'
 import { formatArticleDate as formatDate, stripHtml } from '~/features/articles'
 
-defineProps<{ articles: Article[]; loading: boolean }>()
+defineProps<{ articles: PublicArticle[]; loading: boolean }>()
 </script>
 
 <template>

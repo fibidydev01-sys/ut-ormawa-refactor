@@ -90,7 +90,8 @@ export const ARTICLE_SCENARIOS = [
         'meta article:author SSR berubah',
       )
       assert(
-        html.includes('"@type":"NewsArticle"') && html.includes('"headline":"Juara Lomba Robot 2026"'),
+        html.includes('"@type":"NewsArticle"') &&
+          html.includes('"headline":"Juara Lomba Robot 2026"'),
         'JSON-LD NewsArticle hilang',
       )
     },

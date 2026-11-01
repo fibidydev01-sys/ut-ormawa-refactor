@@ -1,4 +1,11 @@
 // nuxt.config.ts
+
+/** Header cache CDN untuk halaman "ISR": segar `seconds` detik, lalu basi-tapi-dipakai sehari. */
+function isrHeaders(seconds: number) {
+  return { 'cache-control': `public, max-age=0, s-maxage=${seconds}, stale-while-revalidate=86400` }
+}
+const NO_INDEX = { 'x-robots-tag': 'noindex, nofollow' }
+
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
 
@@ -10,6 +17,40 @@ export default defineNuxtConfig({
   // Aktifkan SSR agar rute API server bisa berjalan
   ssr: true,
 
+  // ── Mode render per rute (GOLDEN-PLAN §5, sesi S6) ───────────────────
+  // SSG  = HTML dibuat saat build (konten statis).
+  // ISR  = SSR + Cache-Control s-maxage → disimpan CDN Firebase Hosting,
+  //        diperbarui di belakang layar (stale-while-revalidate).
+  // SPA  = dashboard: data privat, dirender di browser (sekaligus
+  //        menghapus tunggu 5 detik di SSR — temuan T16).
+  routeRules: {
+    '/': { redirect: { to: '/beranda', statusCode: 301 } },
+    '/profil': { redirect: { to: '/profil/tentang-ut', statusCode: 301 } },
+
+    // SSG
+    '/profil/tentang-ut': { prerender: true },
+    '/profil/tentang-ormawa': { prerender: true },
+    '/profil/visi-misi': { prerender: true },
+    '/zona-kampus/**': { prerender: true },
+    '/media/perlombaan': { prerender: true },
+    '/media/laporan': { prerender: true },
+    '/media/social-media': { prerender: true },
+    '/kontak/**': { prerender: true },
+
+    // ISR (CDN)
+    '/beranda': { headers: isrHeaders(600) },
+    '/media/artikel': { headers: isrHeaders(600) },
+    '/berita/**': { headers: isrHeaders(3600) },
+    '/profil/struktur-pengurus': { headers: isrHeaders(3600) },
+    '/api/public/**': { headers: isrHeaders(600) },
+    '/api/__sitemap__/**': { headers: isrHeaders(3600) },
+
+    // Privat / tidak diindeks
+    '/login/**': { headers: NO_INDEX },
+    '/dashboard/**': { ssr: false, headers: { ...NO_INDEX, 'cache-control': 'no-store' } },
+    '/sandbox': { ssr: false, headers: NO_INDEX },
+  },
+
   nitro: {
     preset: 'firebase',
     firebase: {
@@ -20,7 +61,12 @@ export default defineNuxtConfig({
       external: [
         'sharp'
       ]
-    }
+    },
+    // Hanya rute ber-`prerender: true` di routeRules yang dibuat statis;
+    // jangan ikut merayapi tautan ke halaman ISR/dashboard.
+    prerender: {
+      crawlLinks: false,
+    },
   },
 
   vite: {

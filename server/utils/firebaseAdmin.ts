@@ -58,6 +58,27 @@ function getFirebaseAdminApp() {
   }
 }
 
+/**
+ * Apakah server punya cara sah memakai Firebase Admin?
+ * (file serviceAccountKey.json, env FIREBASE_ADMIN_KEY, emulator, atau
+ * berjalan di Google Cloud / Firebase Functions.)
+ *
+ * [S6] Dipakai API publik supaya build lokal/tes tanpa kredensial langsung
+ * mengembalikan data kosong — tanpa menunggu lookup metadata GCE yang lambat.
+ * Hasilnya sama dengan perilaku lama: tanpa env Firebase, halaman publik
+ * menampilkan keadaan kosong.
+ */
+export function isFirebaseAdminConfigured(): boolean {
+  return (
+    fs.existsSync(path.resolve(process.cwd(), 'serviceAccountKey.json')) ||
+    !!process.env.FIREBASE_ADMIN_KEY ||
+    !!process.env.FIRESTORE_EMULATOR_HOST ||
+    !!process.env.K_SERVICE ||
+    !!process.env.FUNCTION_TARGET ||
+    !!process.env.FIREBASE_CONFIG
+  )
+}
+
 // Ekspor fungsi getter untuk Auth dan Firestore milik Admin
 export const getAdminAuth = () => getAuth(getFirebaseAdminApp())
 export const getAdminDb = () => getFirestore(getFirebaseAdminApp())

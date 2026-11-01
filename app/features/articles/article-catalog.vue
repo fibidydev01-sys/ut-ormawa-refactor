@@ -7,8 +7,7 @@
 import { formatArticleDate as formatDate, stripHtml } from './article-format'
 import { ARTICLE_CATEGORIES as categories } from './articles.data'
 
-import { ref, computed, onMounted } from 'vue'
-import type { Article } from '~/types/database'
+import { ref, computed } from 'vue'
 
 const selectedCategory = ref('Semua')
 
@@ -21,21 +20,8 @@ function categoryLabel(cat: string) {
   return cat
 }
 
-const { getPublishedArticles } = useArticles()
-
-const articles = ref<Article[]>([])
-const isLoading = ref<boolean>(true)
-
-onMounted(async () => {
-  isLoading.value = true
-  try {
-    articles.value = await getPublishedArticles()
-  } catch (error) {
-    console.error('Gagal mengambil artikel:', error)
-  } finally {
-    isLoading.value = false
-  }
-})
+// [S6] Diambil di server (SSR) — HTML awal sudah berisi daftar artikel.
+const { data: articles, pending: isLoading } = await usePublicArticles()
 
 // Filter Logic
 const filteredArticles = computed(() => {
