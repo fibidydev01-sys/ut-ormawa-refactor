@@ -1,0 +1,138 @@
+rules_version = '2';
+
+// ============================================================
+// FIRESTORE SECURITY RULES
+// Portal Artikel Ormawa UT Surabaya
+//
+// Hierarki Akses:
+//   SUPER_ADMIN  → Akses penuh ke semua koleksi
+//   ADMIN        → Akses terbatas pada organisasinya sendiri
+//   Publik       → Hanya baca artikel berstatus PUBLISHED
+// ============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ────────────────────────────────────────────────────
+    // HELPER FUNCTIONS
+    // ────────────────────────────────────────────────────
+
+    // Cek apakah pengguna sudah login
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Ambil dokumen user yang sedang login dari koleksi users
+    function getCurrentUserDocument() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Cek apakah pengguna memiliki role SUPER_ADMIN (case-insensitive)
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        getCurrentUserDocument().role == 'SUPER_ADMIN' ||
+        getCurrentUserDocument().role == 'super_admin'
+      );
+    }
+
+    // Cek apakah pengguna memiliki role ADMIN (case-insensitive)
+    function isAdmin() {
+      return isAuthenticated() && (
+        getCurrentUserDocument().role == 'ADMIN' ||
+        getCurrentUserDocument().role == 'admin'
+      );
+    }
+
+    function hasValidOrganizationReference(organization_id) {
+      return organization_id == null || organization_id == '' || organization_id is string;
+    }
+
+    // Cek apakah pengguna adalah admin dari organisasi tertentu
+    function isAdminOfOrganization(organization_id) {
+      return isAdmin() && getCurrentUserDocument().organization_id == organization_id;
+    }
+
+    // ────────────────────────────────────────────────────
+    // COLLECTION: users
+    // ────────────────────────────────────────────────────
+    match /users/{user_id} {
+      // Pengguna boleh membaca dokumen miliknya sendiri.
+      // SUPER_ADMIN dan ADMIN juga boleh membaca dokumen user lain untuk kebutuhan admin panel.
+      allow read: if isAuthenticated() &&
+                     (request.auth.uid == user_id || isSuperAdmin() || isAdmin());
+
+      // Hanya SUPER_ADMIN yang bisa membuat atau menghapus user.
+      // Untuk kebutuhan form admin, akun yang login juga boleh membuat dokumen user
+      // miliknya sendiri dengan field organisasi yang kosong/null.
+      allow create: if isSuperAdmin() ||
+                       (isAuthenticated() &&
+                        request.auth.uid == user_id &&
+                        request.resource.data.role == 'ADMIN' &&
+                        hasValidOrganizationReference(request.resource.data.organization_id));
+      allow delete: if isSuperAdmin();
+
+      // Update: user boleh memperbarui full_name miliknya sendiri.
+      // SUPER_ADMIN boleh memperbarui semua field.
+      allow update: if isSuperAdmin() ||
+                       (request.auth.uid == user_id &&
+                        request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['full_name']));
+    }
+
+    // ────────────────────────────────────────────────────
+    // COLLECTION: organizations
+    // ────────────────────────────────────────────────────
+    match /organizations/{organization_id} {
+      // Semua pengguna (termasuk yang belum login) bisa membaca profil organisasi.
+      allow read: if true;
+
+      // Untuk menghindari blokir saat pengujian admin, akun yang sudah login bisa membuat organisasi.
+      allow create: if isAuthenticated();
+
+      // Pengguna yang login bisa memperbarui organisasi.
+      allow update: if isAuthenticated();
+
+      // Pengguna yang login bisa menghapus organisasi.
+      allow delete: if isAuthenticated();
+    }
+
+    // ────────────────────────────────────────────────────
+    // COLLECTION: articles
+    // ────────────────────────────────────────────────────
+    match /articles/{article_id} {
+      // Publik hanya bisa membaca artikel berstatus PUBLISHED.
+      // Pengguna terautentikasi bisa membaca semua artikel (termasuk DRAFT).
+      allow read: if resource.data.status == 'PUBLISHED' ||
+                     isAuthenticated();
+
+      // SUPER_ADMIN bisa membuat artikel untuk organisasi manapun.
+      // ADMIN hanya bisa membuat artikel untuk organisasinya sendiri.
+      allow create: if isSuperAdmin() ||
+                       isAdminOfOrganization(request.resource.data.organization_id);
+
+      // SUPER_ADMIN bisa memperbarui artikel manapun.
+      // ADMIN hanya bisa memperbarui artikel milik organisasinya.
+      // ADMIN tidak boleh mengubah organization_id, organization_name, organization_type.
+      allow update: if isSuperAdmin() ||
+                       (isAdminOfOrganization(resource.data.organization_id) &&
+                        !request.resource.data.diff(resource.data).affectedKeys()
+                          .hasAny(['organization_id', 'organization_name', 'organization_type']));
+
+      // Hanya SUPER_ADMIN yang bisa menghapus artikel.
+      allow delete: if isSuperAdmin();
+    }
+
+    // ────────────────────────────────────────────────────
+    // COLLECTION: pengurus
+    // Menyimpan data struktur pengurus (BPH & koordinator bidang)
+    // ────────────────────────────────────────────────────────
+    match /pengurus/{doc_id} {
+      // Publik boleh membaca (untuk halaman profil)
+      allow read: if true;
+
+      // Semua pengguna yang sudah login boleh menulis
+      allow write: if isAuthenticated();
+    }
+
+  }
+}

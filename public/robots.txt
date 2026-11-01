@@ -1,0 +1,21 @@
+# Robots.txt untuk Ormawa Universitas Terbuka Surabaya
+User-agent: *
+Allow: /
+Allow: /beranda
+Allow: /profil/
+Allow: /media/
+Allow: /berita/
+Allow: /zona-kampus/
+Allow: /kontak/
+
+# Cegah mesin pencari mengindeks area privat admin dan API internal
+Disallow: /dashboard/
+Disallow: /dashboard/*
+Disallow: /login/
+Disallow: /login/*
+Disallow: /sandbox/
+Disallow: /sandbox/*
+Disallow: /api/
+
+Sitemap: https://ormawa-utsurabaya.web.app/sitemap.xml
+Host: https://ormawa-utsurabaya.web.app

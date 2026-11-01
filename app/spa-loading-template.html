@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #12408b;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .logo-container {
+      margin-bottom: 2rem;
+      animation: bounce-gentle 2s infinite;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+
+    .logo-img {
+      width: 140px;
+      height: 140px;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
+      display: block;
+      margin: 0 auto;
+    }
+
+    .typography {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 0;
+      text-align: center;
+    }
+
+    @media (min-width: 768px) {
+      .typography {
+        font-size: 3rem;
+        gap: 0.75rem;
+      }
+      .logo-img {
+        width: 160px;
+        height: 160px;
+      }
+    }
+
+    .text-ormawa {
+      color: #ffffff;
+    }
+
+    .text-utsurabaya {
+      color: #ffcc00;
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: #bfdbfe;
+      margin: 0;
+      text-align: center;
+    }
+
+    @media (min-width: 768px) {
+      .subtitle {
+        font-size: 1.125rem;
+      }
+    }
+
+    @keyframes bounce-gentle {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-12px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-container">
+    <img src="/img/Favicon_bulat_transparan.png" alt="Logo Ormawa UT Surabaya" class="logo-img">
+  </div>
+  <h1 class="typography">
+    <span class="text-ormawa">ORMAWA</span>
+    <span class="text-utsurabaya">UT SURABAYA</span>
+  </h1>
+  <p class="subtitle">Membuka halaman...</p>
+</body>
+</html>

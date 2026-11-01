@@ -1,0 +1,34 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+.firebase
+dist
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Firebase Admin
+serviceAccountKey.json
+
+# Refactor
+.commit_msg.txt
+tests/baseline/screens/*.diff.png
+test-results
+playwright-report

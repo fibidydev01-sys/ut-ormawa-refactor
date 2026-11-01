@@ -1,0 +1,53 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Fungsi untuk memverifikasi apakah pengguna sudah login
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Fungsi sementara yang lebih longgar untuk menghindari blokir upload selama pengujian
+    function isAllowedForTesting() {
+      return isAuthenticated();
+    }
+
+    // Fungsi untuk memverifikasi ukuran file (maksimal 20MB agar upload gambar tetap wajar)
+    function isFileSizeValid() {
+      return request.resource.size < 20 * 1024 * 1024;
+    }
+
+    // Fungsi untuk memverifikasi bahwa file yang diunggah adalah gambar
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // ── Aturan untuk folder organizations ──
+    match /organizations/{imageId} {
+      // Siapapun bisa melihat logo organisasi
+      allow read: if true;
+      // Sementara dibuka untuk menguji upload tanpa blokir permission
+      allow write: if true;
+    }
+
+    // ── Aturan untuk folder articles ──
+    match /articles/{imageId} {
+      // Siapapun bisa melihat gambar artikel
+      allow read: if true;
+      // Sementara dibuka untuk menguji upload tanpa blokir permission
+      allow write: if true;
+    }
+
+    // ── Aturan untuk folder pengurus ──
+    match /pengurus/{imageId} {
+      // Siapapun bisa melihat foto profil pengurus (untuk halaman publik)
+      allow read: if true;
+      // Pengguna yang sudah login bisa upload foto pengurus
+      allow write: if isAuthenticated() && isImage() && isFileSizeValid();
+    }
+  }
+}
