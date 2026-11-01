@@ -16,7 +16,8 @@ import type {
   OrganizationDocument,
   UserDocument,
   OrganizationType,
-  AppError, AuthUser 
+  AppError,
+  AuthUser,
 } from '~/types/database'
 import { getUserRecord } from '~/features/users'
 
