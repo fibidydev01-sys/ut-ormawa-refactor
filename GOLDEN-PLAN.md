@@ -49,9 +49,9 @@ padanan 1:1:
 | Konsep Next.js (Fibidy) | Padanan Nuxt 4 (Ormawa) |
 |---|---|
 | `src/app/` | `app/pages/` + `app/layouts/` |
-| Route group `(marketing)`, `(auth)`, `(dashboard)` | Route group `app/pages/(marketing)/` dst. — folder berkurung **tidak** masuk URL (Nuxt ≥ 3.13) |
+| Route group `(marketing)`, `(auth)`, `(dashboard)` | **Tidak dipakai** — layout dipilih via `definePageMeta({ layout })`; `pages/` cermin URL (lihat §4) |
 | `layout.tsx` per group | `app/layouts/*.vue` + `definePageMeta({ layout })` |
-| `page.tsx` tipis + `client.tsx` | `pages/**.vue` tipis + `app/features/<fitur>/components/*.vue` |
+| `page.tsx` tipis + `client.tsx` | `pages/**.vue` tipis + `app/features/<fitur>/*.vue` (folder fitur datar) |
 | Server Component fetch | `useAsyncData` / `useFetch` (jalan di server saat SSR) |
 | `generateStaticParams` / SSG | `routeRules: { prerender: true }` / `nuxt generate` |
 | ISR `revalidate` | `routeRules: { swr: 3600 }` / `isr` |
@@ -60,7 +60,7 @@ padanan 1:1:
 | `generateMetadata` | `useSeoMeta()` / `useHead()` |
 | `next/image` | `<NuxtImg>` / `<NuxtPicture>` (`@nuxt/image`) |
 | `src/lib/api/*.ts` | `app/services/*.ts` (client) + `server/api/**` (server) |
-| `src/hooks/*` | `app/composables/*` & `app/features/*/composables/*` |
+| `src/hooks/*` | `app/features/<fitur>/useXxx.ts` (+ `app/composables/*` lintas fitur) |
 | `src/stores/*` (zustand) | `app/stores/*` (Pinia — sudah terpasang) |
 | `components/ui` (shadcn) | `app/components/ui` (**Kliping**) |
 | `components/shared/cookie-consent.tsx` | `app/components/shared/CookieConsent.vue` |
@@ -76,7 +76,7 @@ backend. Implikasi penting:
 
 ### 1.3 Pola dari Fibidy yang diadopsi
 
-- Route group per "permukaan": marketing (publik), auth, dashboard, legal.
+- Pemisahan per "permukaan" (marketing, auth, dashboard) lewat **layout**, bukan folder route group.
 - Page tipis — page hanya merakit section/komponen, logika di feature.
 - Komponen dikelompokkan per domain (`marketing/`, `dashboard/`, `layout/`, `shared/`).
 - Lapisan API terpisah (`lib/api/*` → `services/*`).
@@ -159,16 +159,19 @@ setiap akhir sesi. Pindah folder boleh, URL & perilaku tidak boleh berubah.
   Dashboard, cookie banner, optimasi gambar) — dan itu pun tidak boleh mengubah
   alur login yang ada.
 - **R2 — URL immutable.** Setiap URL di §2 tetap merespons sama. Pindah file ke
-  route group `(nama)` tidak mengubah URL. Kalau ragu, cek `npx nuxi routes` /
+  folder lain tidak mengubah URL. Kalau ragu, cek `npx nuxi routes` /
   daftar rute dari build sebelum dan sesudah — **harus identik**.
 - **R3 — Kontrak data immutable.** Nama koleksi, field Firestore, payload API
   tidak diubah. Refactor tipe boleh, bentuk data tidak.
-- **R4 — Visual parity per fase.** Fase struktur (S0–S6) = **tampilan identik**.
-  Fase Kliping (S7–S10) = tampilan boleh "naik kelas" tapi layout, isi, warna
+- **R4 — Visual parity per fase.** Fase A struktur (S0–S5) = **tampilan identik**.
+  Fase Kliping (S9–S11) = tampilan boleh "naik kelas" tapi layout, isi, warna
   brand, dan urutan konten tetap; setiap halaman dicek screenshot sebelum/sesudah.
 
 ### B. Rule Struktur
 
+- **R5a — Maksimal 3 level di dalam `app/`** (kecuali `pages/` yang mengikuti URL dan `components/ui/` milik Kliping). Folder fitur **datar**: tanpa subfolder `components/`/`composables/`/`services/`.
+- **R5b — Naik ke `components/shared` hanya bila dipakai ≥ 2 fitur.** Selain itu tetap di folder fiturnya.
+- **R5c — Konten statis** (teks halaman, daftar lomba/laporan/UKM, link WA) di `features/<x>/<x>.data.ts`, bukan di template.
 - **R5 — Page tipis.** File di `pages/` maksimal ±80 baris: `definePageMeta`,
   `useSeoMeta`, fetch data (`useAsyncData`), lalu merakit komponen. Tidak ada
   logika bisnis, tidak ada panggilan Firestore langsung.
@@ -178,7 +181,7 @@ setiap akhir sesi. Pindah folder boleh, URL & perilaku tidak boleh berubah.
   `pages → features → (components/shared, components/ui, composables, services, stores) → utils/types`.
   `components/ui` (Kliping) tidak boleh import apa pun dari app. Fitur A tidak
   boleh import isi internal fitur B (lewat `index.ts` publiknya saja).
-- **R8 — Firebase hanya di `services/` dan `server/`.** Komponen & page tidak
+- **R8 — Firebase hanya di `*.service.ts`, `services/firebase.ts`, dan `server/`.** Komponen & page tidak
   boleh import `firebase/*` langsung. Semua akses lewat composable → service.
 - **R9 — Satu sumber kebenaran.** Konstanta (menu navbar, menu sidebar, daftar
   modul akses, link WA) di `app/constants/*` — bukan di-hardcode di template.
@@ -230,133 +233,167 @@ setiap akhir sesi. Pindah folder boleh, URL & perilaku tidak boleh berubah.
 
 ## 4. Struktur Folder Target
 
+> **Prinsip: tidak terlalu nested, tidak monolith.**
+> Maksimal **3 level** di dalam `app/` (pengecualian: `pages/` mengikuti URL,
+> `components/ui/` mengikuti Kliping). Satu file = satu tanggung jawab.
+
+| | ❌ Terlalu nested | ❌ Monolith (baseline) | ✅ Target |
+|---|---|---|---|
+| Contoh | `features/articles/components/form/fields/CoverField.vue` | `pages/dashboard/admin-area/index.vue` 743 baris | `features/articles/ArticleForm.vue` |
+| Kedalaman | 5–6 level | 2 level, isi gemuk | ≤ 3 level |
+
+**Dua keputusan penting:**
+1. **Tanpa route group `(marketing)/(auth)/(dashboard)`.** Di Nuxt, layout dipilih
+   lewat `definePageMeta({ layout })`, bukan folder. Group hanya menambah satu level
+   tanpa manfaat. `pages/` = cermin URL apa adanya.
+2. **Folder fitur DATAR.** Tidak ada subfolder `components/` `composables/` `services/`
+   di dalam fitur — jenis file terbaca dari namanya:
+   `ArticleCard.vue` · `useArticles.ts` · `articles.service.ts` · `media.data.ts`.
+
 ```
 ut-ormawa-refactor/
 ├── app/
-│   ├── app.vue                       # root: NuxtLayout + NuxtPage + CookieConsent + Toaster
-│   ├── error.vue                     # 404/500 (Kliping not-found-01)
-│   ├── assets/css/
-│   │   └── tailwind.css              # Tailwind v4 + token tema Kliping + brand admiral/lemon
+│   ├── app.vue                      # NuxtLayout + NuxtPage + CookieConsent + Toaster
+│   ├── error.vue                    # 404 / 500
+│   ├── assets/css/tailwind.css      # Tailwind v4 + token Kliping + brand admiral/lemon
 │   │
-│   ├── pages/                        # TIPIS — routing + SEO + fetch + rakit komponen
-│   │   ├── index.vue                 # (redirect via routeRules, file boleh tetap ada)
-│   │   ├── (marketing)/
-│   │   │   ├── beranda/index.vue
-│   │   │   ├── profil/{index,tentang-ut,tentang-ormawa,visi-misi,struktur-pengurus}.vue
-│   │   │   ├── zona-kampus/{akademik,non-akademik,ukm,imf,cari-teman}.vue
-│   │   │   ├── media/{artikel,perlombaan,laporan,social-media}.vue
-│   │   │   ├── berita/[slug].vue
-│   │   │   └── kontak/{aspirasi,pelaporan,wa_prodi_2026_2}.vue
-│   │   ├── (auth)/
-│   │   │   └── login/{admin,mahasiswa}.vue
-│   │   ├── (dashboard)/
-│   │   │   └── dashboard/
-│   │   │       ├── index.vue
-│   │   │       ├── Highlight-terkini/{index,form}.vue
-│   │   │       ├── users/index.vue
-│   │   │       ├── organizations/index.vue
-│   │   │       ├── admin-area/{index,struktur-pengurus,kelola-user}.vue
-│   │   │       └── mahasiswa/{index,edit-profil}.vue
-│   │   └── (dev)/
-│   │       └── sandbox.vue
+│   ├── pages/                       # ① TIPIS — routing + SEO + fetch + rakit komponen
+│   │   ├── index.vue                #   redirect → /beranda
+│   │   ├── beranda/index.vue
+│   │   ├── profil.vue               #   parent route (wrapper + <NuxtPage/>)
+│   │   ├── profil/
+│   │   │   ├── index.vue · tentang-ut.vue · tentang-ormawa.vue
+│   │   │   └── visi-misi.vue · struktur-pengurus.vue
+│   │   ├── zona-kampus/  akademik · non-akademik · ukm · imf · cari-teman (.vue)
+│   │   ├── media/        artikel · perlombaan · laporan · social-media (.vue)
+│   │   ├── berita/[slug].vue
+│   │   ├── kontak/       aspirasi · pelaporan · wa_prodi_2026_2 (.vue)
+│   │   ├── login/        admin · mahasiswa (.vue)
+│   │   ├── dashboard/
+│   │   │   ├── index.vue
+│   │   │   ├── Highlight-terkini/index.vue · form.vue
+│   │   │   ├── users/index.vue · organizations/index.vue
+│   │   │   ├── admin-area/index.vue · struktur-pengurus.vue · kelola-user.vue
+│   │   │   └── mahasiswa/index.vue · edit-profil.vue
+│   │   └── sandbox.vue
 │   │
-│   ├── layouts/
-│   │   ├── default.vue               # marketing: SiteHeader + slot + SiteFooter
-│   │   ├── auth.vue                  # halaman login (kosong/terpusat)
-│   │   └── dashboard.vue             # (rename dari admin.vue; alias 'admin' dijaga selama transisi)
-│   │
-│   ├── features/                     # ⭐ inti: satu folder per domain bisnis
+│   ├── features/                    # ② INTI — satu folder per domain, isi DATAR
 │   │   ├── auth/
-│   │   │   ├── components/           # LoginAdminForm, PasskeyButton, EmailLinkForm, GoogleLoginButton
-│   │   │   ├── composables/          # useAuth, useSession, usePasskey
-│   │   │   ├── services/             # auth.service.ts (firebase/auth), session.service.ts ($fetch /api/auth/*)
-│   │   │   └── index.ts              # API publik fitur
-│   │   ├── articles/                 # Highlight-terkini, media/artikel, berita/[slug]
-│   │   │   ├── components/           # ArticleCard, ArticleList, ArticleForm, ArticleTable, ArticleContent
-│   │   │   ├── composables/          # useArticles (dipecah dari 375 baris)
-│   │   │   ├── services/             # articles.service.ts
-│   │   │   └── types.ts
+│   │   │   ├── LoginAdminForm.vue · LoginPasskey.vue · LoginEmailLink.vue · LoginGoogle.vue
+│   │   │   ├── PasskeyRegister.vue  #   dari admin-area/index.vue
+│   │   │   ├── useAuth.ts           #   user, role, login*, logout(), hasAccess()
+│   │   │   ├── auth.service.ts      #   firebase/auth + /api/webauthn + /api/auth/*
+│   │   │   └── index.ts
+│   │   ├── articles/                #   Highlight-terkini, media/artikel, berita/[slug]
+│   │   │   ├── ArticleCard.vue · ArticleGrid.vue · ArticleDetail.vue
+│   │   │   ├── ArticleTable.vue · ArticleForm.vue
+│   │   │   └── useArticles.ts · articles.service.ts · index.ts
 │   │   ├── organizations/
-│   │   ├── pengurus/                 # struktur pengurus (publik + admin)
-│   │   ├── users/                    # kelola user, create/delete via /api
-│   │   ├── mahasiswa/                # dashboard & edit profil mahasiswa
-│   │   ├── activity-log/
-│   │   ├── kontak/                   # aspirasi, pelaporan, WA prodi
-│   │   ├── zona-kampus/              # akademik, ukm, imf, cari-teman
-│   │   └── landing/                  # section-section beranda (Hero, Highlight, dst.)
+│   │   │   ├── OrganizationTable.vue · OrganizationDialog.vue
+│   │   │   └── useOrganizations.ts · organizations.service.ts · index.ts
+│   │   ├── pengurus/
+│   │   │   ├── PengurusChart.vue (publik) · PengurusEditor.vue (admin)
+│   │   │   └── usePengurus.ts · pengurus.service.ts · index.ts
+│   │   ├── users/
+│   │   │   ├── UserTable.vue · UserDialog.vue · ActivityLogList.vue
+│   │   │   └── useUsers.ts · useActivityLog.ts · users.service.ts · index.ts
+│   │   ├── mahasiswa/
+│   │   │   └── MahasiswaProfileCard.vue · MahasiswaProfileForm.vue · index.ts
+│   │   ├── landing/                 #   section beranda: HeroSection.vue · …Section.vue
+│   │   ├── profil/                  #   TentangUt.vue · TentangOrmawa.vue · VisiMisi.vue · profil.data.ts
+│   │   ├── zona-kampus/             #   ProgramList.vue · CariTemanForm.vue · zona-kampus.data.ts
+│   │   ├── media/                   #   LombaList.vue · LaporanList.vue · SocialLinks.vue · media.data.ts
+│   │   └── kontak/                  #   AspirasiForm.vue · PelaporanForm.vue · WaProdiList.vue · kontak.data.ts
 │   │
-│   ├── components/
-│   │   ├── ui/                       # 🔒 KLIPING (via CLI) — button, card, dialog, sidebar, sonner, …
-│   │   ├── blocks/                   # 🔒 KLIPING blocks yang sudah diadaptasi (navbar, footer, sidebar, login)
-│   │   ├── layout/
-│   │   │   ├── marketing/            # SiteHeader (eks Navbar.vue 551 baris), SiteFooter, NavMenu, MobileNav, AuthAction
-│   │   │   └── dashboard/            # DashboardSidebar, DashboardTopbar, NavUser (eks HeaderProfile)
-│   │   └── shared/                   # AppImage, CookieConsent, RichTextEditor, PageHeader, EmptyState
+│   ├── components/                  # ③ LINTAS FITUR saja
+│   │   ├── ui/                      #   🔒 KLIPING (via CLI)
+│   │   ├── layout/                  #   datar
+│   │   │   ├── SiteHeader.vue · SiteMobileNav.vue · SiteFooter.vue · AuthAction.vue
+│   │   │   └── DashboardSidebar.vue · DashboardTopbar.vue · NavUser.vue
+│   │   └── shared/
+│   │       ├── AppImage.vue · CookieConsent.vue · RichTextEditor.vue
+│   │       └── PageHeader.vue · EmptyState.vue · ConfirmDialog.vue
 │   │
-│   ├── composables/                  # lintas-fitur saja: useFirebase, useConsent, useAppToast
-│   ├── services/
-│   │   └── firebase.ts               # getter app/auth/db/storage (lazy init) — satu-satunya init client
-│   ├── stores/                       # Pinia: auth.store.ts (user, role, accessModules, ready)
-│   ├── middleware/
-│   │   ├── auth.ts                   # wajib login (+ role) — perilaku sama dengan versi lama
-│   │   └── guest.ts                  # (opsional) sudah login → jangan tampilkan form login? ⚠ lihat §13
-│   ├── plugins/
-│   │   ├── firebase.client.ts        # tipis: panggil services/firebase + sinkron auth store
-│   │   ├── auth-session.server.ts    # hidrasi auth store dari cookie saat SSR
-│   │   ├── ssr-width.ts              # syarat Kliping (provideSSRWidth)
-│   │   └── analytics.client.ts       # hanya aktif setelah consent
-│   ├── constants/                    # nav.ts, dashboard-menu.ts, access-modules.ts, links.ts, cookies.ts
-│   ├── types/                        # database.types.ts (+ re-export per fitur)
-│   ├── utils/                        # slugify, formatDate, normalizeRole, cn (lib/utils)
-│   └── lib/utils.ts                  # cn() — dibuat Kliping init
+│   ├── layouts/        default.vue · auth.vue · dashboard.vue
+│   ├── middleware/     auth.ts
+│   ├── plugins/        firebase.client.ts · auth-session.server.ts · ssr-width.ts · analytics.client.ts
+│   ├── composables/    useConsent.ts · useUpload.ts        # (eks useStorage)
+│   ├── services/       firebase.ts                         # satu-satunya init Firebase client
+│   ├── stores/         auth.ts                             # Pinia
+│   ├── constants/      nav.ts · dashboard-menu.ts · access-modules.ts · cookies.ts
+│   ├── types/          database.ts
+│   ├── utils/          role.ts · date.ts · slug.ts
+│   └── lib/utils.ts    # cn() — dibuat Kliping
 │
 ├── server/
-│   ├── api/
-│   │   ├── auth/session.post.ts      # 🆕 tukar ID token → session cookie
-│   │   ├── auth/session.delete.ts    # 🆕 logout: hapus cookie + revoke
-│   │   ├── auth/me.get.ts            # 🆕 profil ringkas dari cookie (untuk SSR navbar)
-│   │   ├── articles/…                # (tetap)
-│   │   ├── webauthn/…                # (tetap)
-│   │   ├── create-user.post.ts       # (tetap)
-│   │   └── delete-user.post.ts       # (tetap)
-│   ├── middleware/
-│   │   └── session.ts                # 🆕 baca __session → event.context.user
-│   ├── routes/__sitemap__/…          # (opsional, tetap URL /api/__sitemap__/urls)
-│   └── utils/
-│       ├── firebaseAdmin.ts          # (tetap)
-│       ├── session.ts                # 🆕 verifySessionCookie + cache
-│       └── requireRole.ts            # 🆕 guard API (dipakai create-user/delete-user)
+│   ├── api/                         # path file = URL → struktur lama TETAP
+│   │   ├── auth/  session.post.ts · session.delete.ts · me.get.ts   # 🆕 (Fase B)
+│   │   ├── articles/[slug].get.ts
+│   │   ├── webauthn/ (4 file tetap)
+│   │   ├── create-user.post.ts · delete-user.post.ts
+│   │   └── __sitemap__/urls.ts
+│   ├── middleware/session.ts        # 🆕 (Fase B) baca cookie __session
+│   └── utils/      firebaseAdmin.ts · session.ts · requireRole.ts
 │
-├── public/img/                       # nama file tanpa spasi, kebab-case (+ versi .webp)
-├── scripts/                          # semua script utilitas (R10)
-├── docs/                             # DATABASE.md, ARCHITECTURE.md, adr/
-├── tests/                            # e2e/route-parity, e2e/smoke (Playwright)
-├── components.json                   # konfigurasi Kliping
-├── nuxt.config.ts
-├── firebase.json · firestore.rules · storage.rules · .firebaserc
-├── eslint.config.mjs · .prettierrc · tsconfig.json
-└── GOLDEN-PLAN.md                    # file ini
+├── public/img/                      # kebab-case + .webp
+├── scripts/                         # utilitas (pindahan dari root)
+├── docs/                            # DATABASE.md, ARCHITECTURE.md
+├── tests/                           # route parity, screenshot, smoke
+└── nuxt.config.ts · components.json · firebase.json · firestore.rules · storage.rules · GOLDEN-PLAN.md
 ```
 
-**Kenapa `features/`?** Halaman lama gemuk (dashboard/admin-area 743 baris,
-organizations 608, Navbar 551, users 506). Dengan `features/`, page cuma
-"perakit", dan semua hal tentang artikel ada di satu folder — persis seperti
-`components/dashboard/product/` + `hooks/dashboard/use-products.ts` +
-`lib/api/products.ts` di Fibidy, tapi dikumpulkan per fitur.
+### 4.1 Contoh page tipis
 
-**Auto-import Nuxt:** tambahkan di `nuxt.config.ts`:
+`pages/dashboard/organizations/index.vue` (baseline 608 baris) →
+
+```vue
+<script setup lang="ts">
+definePageMeta({ layout: 'dashboard', middleware: 'auth' })
+useSeoMeta({ title: 'Kelola Organisasi' })
+</script>
+
+<template>
+  <PageHeader title="Organisasi" description="Kelola himpunan & UKM" />
+  <OrganizationTable />
+</template>
+```
+
+`OrganizationTable.vue` (UI) → `useOrganizations.ts` (state/loading/error) →
+`organizations.service.ts` (query Firestore saja).
+
+### 4.2 Auto-import
 
 ```ts
+// nuxt.config.ts
 components: [
-  { path: '~/components/ui', pathPrefix: false, extensions: ['.vue'] }, // via shadcn-nuxt
   { path: '~/components', pathPrefix: false },
-  { path: '~/features', pattern: '*/components/**', pathPrefix: false },
+  { path: '~/features', pathPrefix: false, extensions: ['.vue'] },
 ],
-imports: { dirs: ['features/*/composables', 'stores', 'utils', 'constants'] },
+imports: { dirs: ['features/*/use*.ts', 'stores', 'utils', 'constants'] },
 ```
 
-Services **tidak** di-auto-import — import eksplisit supaya dependensi Firebase
-terlihat jelas (R8).
+`*.service.ts` dan `*.data.ts` **tidak** di-auto-import — import eksplisit
+supaya dependensi Firebase & sumber konten terlihat jelas (R8).
+
+### 4.3 Peta pemindahan baseline → target
+
+| Baseline | Target |
+|---|---|
+| `components/Navbar.vue` (551) | `components/layout/SiteHeader.vue` + `SiteMobileNav.vue` + `AuthAction.vue` + `constants/nav.ts` |
+| `components/Footer.vue` | `components/layout/SiteFooter.vue` |
+| `components/admin/Sidebar.vue` · `HeaderProfile.vue` | `components/layout/DashboardSidebar.vue` · `NavUser.vue` + `constants/dashboard-menu.ts` |
+| `components/RichTextEditor.vue` | `components/shared/RichTextEditor.vue` |
+| `composables/useArticles.ts` (375) | `features/articles/useArticles.ts` + `articles.service.ts` |
+| `composables/useOrganizations.ts` | `features/organizations/…` |
+| `composables/usePengurus.ts` | `features/pengurus/…` |
+| `composables/useUsers.ts` · `useActivityLog.ts` | `features/users/…` |
+| `composables/useStorage.ts` | `composables/useUpload.ts` |
+| `plugins/firebase.client.ts` (init + auth listener) | `services/firebase.ts` + `stores/auth.ts` + plugin tipis |
+| `middleware/auth.ts` (`normalizeRole`) | tetap + `utils/role.ts` |
+| `layouts/admin.vue` | `layouts/dashboard.vue` (alias `admin` dijaga selama transisi) |
+| `types/database.types.ts` | `types/database.ts` |
+| isi `pages/**` > 80 baris | komponen di `features/<domain>/` + konten di `*.data.ts` |
+| `create-admin.js`, `seed-*.js`, `add-*`, `fix-deploy.*`, `remove-sharp.py`, `deploy.bat` | `scripts/` |
 
 ---
 
@@ -383,7 +420,7 @@ Semua dideklarasikan di **satu tempat**: `routeRules` di `nuxt.config.ts`.
 
 Catatan implementasi:
 - ISR/SWR di preset Firebase: Nitro menyetel `cache-control: s-maxage, stale-while-revalidate`,
-  dan **Firebase Hosting CDN** yang menyimpan cache-nya. Verifikasi header di sesi S4.
+  dan **Firebase Hosting CDN** yang menyimpan cache-nya. Verifikasi header di sesi S6.
 - Halaman ISR yang menampilkan **tombol Dashboard** tidak boleh di-cache dengan
   isi spesifik user → bagian auth di navbar dirender **client-only** (`<ClientOnly>`
   dengan fallback tombol "Login" berukuran sama, tanpa layout shift), atau lewat
@@ -458,7 +495,7 @@ dibungkus satu fungsi `useAuth().logout()` supaya 4 tempat logout lama memanggil
 
 ### 6.4 Tombol **Dashboard** di landing page
 
-`components/layout/marketing/AuthAction.vue` — satu komponen, dipakai navbar
+`components/layout/AuthAction.vue` — satu komponen, dipakai navbar
 desktop & mobile (menggantikan 2 tombol `to="/login/admin"` di Navbar.vue):
 
 | State | Tampil |
@@ -528,7 +565,7 @@ Target: LCP < 2,5 s di `/beranda` (mobile, Lighthouse), CLS < 0,1, total gambar 
 
 ## 9. Integrasi Kliping UI
 
-### 9.1 Setup (sesi S7)
+### 9.1 Setup (sesi S9)
 
 ```bash
 # Tailwind v3 (@nuxtjs/tailwindcss) → Tailwind v4 (@tailwindcss/vite)
@@ -578,19 +615,19 @@ Jalankan `npx @tailwindcss/upgrade` untuk kelas yang berganti nama di v4
 
 | Lama | Kliping | Sesi |
 |---|---|---|
-| Tombol/inputs ad-hoc Tailwind | `button`, `input`, `textarea`, `label`, `field`, `select`, `checkbox`, `switch` | S8 |
-| Kartu konten | `card`, `badge`, `avatar`, `skeleton`, `empty` | S8 |
-| Alert/konfirmasi `confirm()`/`alert()` | `alert-dialog`, `sonner` (toast) | S8 |
-| Modal form dashboard | `dialog`, `sheet`, `drawer` (mobile) | S9 |
-| Tabel users/organizations/artikel | `table` (+ `@tanstack/vue-table` bila perlu sort/filter yang **sudah ada**) | S9 |
-| `Navbar.vue` (dropdown desktop + menu mobile) | block `navbar-03` (nested dropdown) + `navigation-menu`, `sheet` | S8 |
-| `Footer.vue` | block `footer-0x` yang paling mirip | S8 |
-| `admin/Sidebar.vue` + `HeaderProfile.vue` | block `sidebar-07` (collapse to icons) + `dropdown-menu` | S9 |
-| Halaman login | block `login-03`/`login-04` (form tetap, 3 metode tetap) | S9 |
-| Halaman 404 | block `not-found-01` → `app/error.vue` | S10 |
-| Cookie banner | block `banner-03` atau `card` + `button` | S6 |
+| Tombol/inputs ad-hoc Tailwind | `button`, `input`, `textarea`, `label`, `field`, `select`, `checkbox`, `switch` | S10 |
+| Kartu konten | `card`, `badge`, `avatar`, `skeleton`, `empty` | S10 |
+| Alert/konfirmasi `confirm()`/`alert()` | `alert-dialog`, `sonner` (toast) | S10 |
+| Modal form dashboard | `dialog`, `sheet`, `drawer` (mobile) | S11 |
+| Tabel users/organizations/artikel | `table` (+ `@tanstack/vue-table` bila perlu sort/filter yang **sudah ada**) | S11 |
+| `Navbar.vue` (dropdown desktop + menu mobile) | block `navbar-03` (nested dropdown) + `navigation-menu`, `sheet` | S10 |
+| `Footer.vue` | block `footer-0x` yang paling mirip | S10 |
+| `admin/Sidebar.vue` + `HeaderProfile.vue` | block `sidebar-07` (collapse to icons) + `dropdown-menu` | S11 |
+| Halaman login | block `login-03`/`login-04` (form tetap, 3 metode tetap) | S11 |
+| Halaman 404 | block `not-found-01` → `app/error.vue` | S11 |
+| Cookie banner | block `banner-03` atau `card` + `button` | S8 |
 | Tab/accordion di halaman profil/zona kampus | `tabs`, `accordion` | S10 |
-| Ikon SVG inline | `@lucide/vue` (iconLibrary Kliping) — kecuali logo brand (WhatsApp dll.) tetap SVG | S8–S10 |
+| Ikon SVG inline | `@lucide/vue` (iconLibrary Kliping) — kecuali logo brand (WhatsApp dll.) tetap SVG | S10–S11 |
 
 Aturan pakai block Kliping: block = **titik awal**. Isi (teks, link, menu)
 selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
@@ -620,107 +657,91 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 
 ## 11. Roadmap Per Sesi
 
-> Setiap sesi ±1 PR. Kolom **DoD** = Definition of Done (semua wajib).
-> Urutan penting: struktur & safety-net dulu, baru auth, baru UI Kliping, baru optimasi.
+> Setiap sesi ±1 PR. **DoD** = Definition of Done (semua wajib).
+> **Fase A = refactor struktur** (tampilan & perilaku identik, screenshot sama).
+> **Fase B = perbaikan** (auth cookie, tombol Dashboard, cookie banner, Kliping, gambar).
+> Fase B baru boleh dimulai setelah Fase A selesai.
 
-### FASE A — Fondasi & Jaring Pengaman
+### FASE A — Refactor Struktur (zero visual & behavior change)
 
 #### S0 · Bootstrap baseline
-- Salin seluruh source `ormawautsby` (branch `main`) ke repo ini apa adanya → commit `chore: import baseline from ormawautsby`.
-- Tambah `.gitignore` (`.firebase/`, `.output/`, `.nuxt/`, `.commit_msg.txt`, `.env`).
-- Catat **route manifest** baseline: `tests/fixtures/routes.baseline.json` (hasil `nuxi build` → daftar rute).
-- Ambil **screenshot baseline** semua rute publik + login (Playwright, desktop & mobile) → `tests/fixtures/screens/`.
-- **DoD:** `npm run build` sukses sama seperti repo lama; manifest & screenshot ada.
+- Salin seluruh source `ormawautsby` (`main`) ke repo ini apa adanya → commit `chore: import baseline from ormawautsby`.
+- `.gitignore`: `.firebase/`, `.output/`, `.nuxt/`, `.commit_msg.txt`, `.env`.
+- Route manifest baseline → `tests/baseline/routes.json` (`npm run test:routes`).
+- Screenshot baseline rute publik + login (desktop & mobile) → `tests/baseline/screens/` (`npm run test:screens`).
+- **DoD:** `npm run build` sukses; manifest & screenshot ada.
 
 #### S1 · Tooling & kebersihan root
-- `@nuxt/eslint` + Prettier + `vue-tsc` (`npm run typecheck`), script `lint`, `format`.
-- Pindah semua script lepas ke `scripts/` (R10) + `scripts/README.md`; perbaiki path di `package.json`/workflow bila dipakai.
-- `README.md` asli (ganti template "Nuxt Minimal Starter"): cara dev, env, deploy.
-- CI: tambah job `check` (lint + typecheck + build) yang jalan di PR; job deploy tetap hanya `main`.
-- **DoD:** CI hijau; root hanya berisi config; tidak ada perubahan di `app/`.
+- `@nuxt/eslint` + Prettier + `vue-tsc` (`typecheck`), script `lint`, `format`.
+- Script lepas → `scripts/` + `scripts/README.md` (R10). `DATABASE.md` → `docs/`.
+- `README.md` asli: dev, env, deploy.
+- CI job `check` (lint + typecheck + build + route parity) di PR; deploy tetap hanya `main`.
+- **DoD:** CI hijau; root hanya config; `app/` tidak tersentuh.
 
-#### S2 · Route groups & layout (pindah file, nol perubahan isi)
-- Pindah pages ke `(marketing)/`, `(auth)/`, `(dashboard)/`, `(dev)/`.
-- Rename layout `admin` → `dashboard` (pertahankan nama lama via alias/`layouts/admin.vue` yang me-*re-export* sampai S9) dan buat `auth.vue`.
-- Pindah `Navbar.vue`/`Footer.vue` → `components/layout/marketing/`, `admin/*` → `components/layout/dashboard/`.
-- **DoD:** route manifest **identik** dengan baseline (R2); screenshot identik.
+#### S2 · Fondasi: constants, types, utils, services, store, layout
+- `constants/nav.ts` (satu array desktop+mobile), `dashboard-menu.ts`, `access-modules.ts`.
+- `utils/role.ts` (`normalizeRole`), `date.ts`, `slug.ts`; `types/database.ts` (+ role `mahasiswa` di tipe).
+- `services/firebase.ts` (lazy getter) + `stores/auth.ts` (Pinia) — `useState('firebaseUser'|'userRole'|…)` lama tetap diisi selama transisi.
+- `Navbar`/`Footer`/`Sidebar`/`HeaderProfile` → `components/layout/*` (dipecah, markup identik). `layouts/admin.vue` → `dashboard.vue`.
+- **DoD:** route parity identik; screenshot identik; tidak ada array menu di template.
 
-#### S3 · Konstanta, tipe & utils
-- Ekstrak menu navbar (desktop+mobile jadi satu array), menu sidebar + `access_modules`, link WA, info kontak → `app/constants/*`.
-- `normalizeRole`, format tanggal, slugify → `app/utils/*`. Lengkapi `UserRole` dengan `mahasiswa` (tipe saja, tanpa ubah logika).
-- **DoD:** tidak ada array menu di template; grep tidak menemukan duplikasi; screenshot identik.
+#### S3 · Feature data layer
+- Bentuk `features/*`; pindah & pecah composables jadi `useX.ts` + `x.service.ts` (§4.3).
+- Semua akses Firestore dari pages dashboard (`getDocs` di admin-area, mahasiswa) pindah ke service.
+- **DoD:** `grep "firebase/" app/pages app/components` = 0; semua CRUD dashboard di-smoke-test.
 
-### FASE B — Lapisan Data & Rendering
+#### S4 · Pecah pages publik
+- `beranda` → `features/landing/*Section.vue`; profil, zona-kampus, media, kontak → komponen + `*.data.ts`; `berita/[slug]` & `media/artikel` → `features/articles`; struktur pengurus → `features/pengurus`.
+- **DoD:** semua page publik ≤ 80 baris; screenshot identik.
 
-#### S4 · Firebase service layer & features/
-- `services/firebase.ts` (lazy getter) — satu-satunya init client; plugin jadi tipis.
-- Bentuk `features/*` dan pindahkan `composables/use*.ts` → `features/<x>/composables` + `services` (R8).
-- Pecah `useArticles.ts` (375 baris) jadi service (CRUD Firestore) + composable (state UI).
-- Pinia `stores/auth.store.ts` menggantikan `useState('firebaseUser'|'userRole'|'accessModules'|'isAuthReady')` — sediakan getter kompatibel selama transisi.
-- **DoD:** `grep "from 'firebase/" app/pages app/components app/features/*/components` = 0; semua CRUD dashboard di-smoke-test.
+#### S5 · Pecah pages auth & dashboard
+- `login/admin` (471) → `LoginAdminForm`/`LoginPasskey`/`LoginEmailLink`; `login/mahasiswa` → `LoginGoogle`.
+- `admin-area/index` (743), `organizations` (608), `admin-area/struktur-pengurus` (527), `users` (506), `Highlight-terkini/form` (436), `kelola-user`, `mahasiswa/*` → features.
+- `sandbox` (549) dipecah atau dibiarkan (dev only) — catat.
+- **DoD:** tidak ada page > 80 baris / komponen > 250 baris; login 4 metode + passkey register + semua CRUD diuji; screenshot identik.
 
-#### S5 · Rendering: routeRules + SSR data publik
-- Tulis `routeRules` sesuai §5.
-- Halaman publik yang fetch di `onMounted` → `useAsyncData` via `server/api/*` publik baru (read-only, Firebase Admin) — contoh: `/api/public/articles`, `/api/public/pengurus`. Kontrak lama tetap.
-- `useSeoMeta` per page (pindahkan meta yang ada, jangan ubah isinya).
-- **DoD:** view-source `/berita/<slug>` & `/media/artikel` berisi konten; header cache sesuai tabel; dashboard tetap SPA; sitemap sama.
+### FASE B — Perbaikan (fitur tetap, kualitas naik)
 
-### FASE C — Auth Session & Privasi
+#### S6 · Rendering: routeRules + SSR data publik
+- `routeRules` sesuai §5; data publik via `useAsyncData` + `server/api/public/*` (read-only, Admin SDK).
+- `useSeoMeta` per page (isi meta lama).
+- **DoD:** view-source `/berita/<slug>` berisi konten; header cache sesuai; dashboard tetap SPA; sitemap sama.
 
-#### S6a · Session cookie `__session`
+#### S7 · Session cookie `__session`
 - `server/api/auth/session.{post,delete}.ts`, `auth/me.get.ts`, `server/middleware/session.ts`, `server/utils/{session,requireRole}.ts`, `plugins/auth-session.server.ts`.
-- Sisipkan `establishSession()` setelah **ke-4** jalur login yang ada (tanpa mengubah jalurnya) dan `useAuth().logout()` di **ke-4** tempat logout.
-- `middleware/auth.ts` membaca store; logika redirect dibiarkan identik.
-- (Jika Q0 disetujui) `requireRole('SUPER_ADMIN')` di `create-user` & `delete-user`; dashboard mengirim cookie/ID token.
-- **DoD:** login → tutup browser → buka `/beranda` → server tahu user (cek `/api/auth/me`); logout menghapus cookie; semua redirect role sama seperti baseline; passkey & email-link tetap jalan.
+- `establishSession()` setelah ke-4 jalur login; `useAuth().logout()` di semua tempat logout.
+- `middleware/auth.ts` baca store; logika redirect identik.
+- (Jika Q0 disetujui) `requireRole('SUPER_ADMIN')` di `create-user` & `delete-user`.
+- **DoD:** login → tutup browser → buka `/beranda` → server kenal user; logout hapus cookie; redirect role sama; passkey & email-link jalan.
 
-#### S6b · Tombol Dashboard + Cookie Consent
-- `AuthAction.vue` (§6.4) dipakai navbar desktop & mobile; kartu "sudah masuk" di `/login/*`.
-- `CookieConsent.vue` + `useConsent()` + gating `analytics.client.ts` (§7).
-- **DoD:** 3 state tombol benar tanpa layout shift (CLS ≈ 0); GA tidak termuat sebelum consent (cek Network); banner tidak muncul lagi setelah dipilih.
+#### S8 · Tombol Dashboard + Cookie Consent
+- `AuthAction.vue` (§6.4) di navbar desktop & mobile; kartu "sudah masuk" di `/login/*`.
+- `CookieConsent.vue` + `useConsent()` + gating analytics (§7).
+- **DoD:** 3 state tombol benar, CLS ≈ 0; GA tidak termuat sebelum consent.
 
-### FASE D — Kliping UI (tampilan naik kelas, fitur tetap)
+#### S9 · Tailwind v4 + Kliping init
+- §9.1 & §9.2, `npx @tailwindcss/upgrade`, plugin `ssr-width`, primitif dasar Kliping.
+- **DoD:** build sukses; screenshot nyaris identik (belum ada swap komponen).
 
-#### S7 · Tailwind v4 + Kliping init
-- §9.1 dan §9.2. `npx @tailwindcss/upgrade`. Plugin `ssr-width`.
-- Tambah primitif dasar: `npx kliping@latest add button card input label textarea select badge avatar skeleton sonner dialog alert-dialog dropdown-menu sheet separator tooltip`.
-- **DoD:** build sukses; screenshot semua halaman **masih identik/nyaris identik** (hanya beda subpiksel akibat v4) — belum ada swap komponen.
+#### S10 · Marketing UI → Kliping
+- `SiteHeader` (navbar-03) + `SiteFooter` + section landing + form kontak memakai primitif Kliping.
+- **DoD:** isi & urutan sama; screenshot dicek; navbar bisa dipakai keyboard.
 
-#### S8 · Marketing UI → Kliping
-- `SiteHeader` dari `navbar-03` + data `constants/nav.ts` + `AuthAction`; `SiteFooter` dari block footer.
-- Section `beranda` dipecah ke `features/landing/components/*` memakai `card`/`button`/`badge`.
-- Form `aspirasi`/`pelaporan`/`cari-teman` memakai `field`/`input`/`textarea`/`select` (validasi lama tetap).
-- **DoD:** setiap halaman publik dibandingkan screenshot; isi & urutan sama; aksesibilitas keyboard navbar OK.
+#### S11 · Dashboard & login UI → Kliping
+- `DashboardSidebar` (sidebar-07), `table`, `dialog`/`sheet`, `alert-dialog`, `sonner`; login (login-03/04); `error.vue` (not-found-01). Hapus alias layout `admin`.
+- **DoD:** semua CRUD + passkey diuji; RBAC menu sama.
 
-#### S9 · Dashboard UI → Kliping
-- `DashboardSidebar` dari `sidebar-07` membaca `constants/dashboard-menu.ts` + `hasAccess()` (link yang sama persis, termasuk yang belum ada halamannya — §13).
-- Tabel users/organizations/artikel → `table`; modal → `dialog`/`sheet`; `confirm()` → `alert-dialog`; notifikasi → `sonner`.
-- Halaman login → block `login-03/04` (3 metode login & urutan tetap).
-- Hapus alias layout `admin`.
-- **DoD:** semua CRUD (artikel, organisasi, user, pengurus, profil mahasiswa) + registrasi passkey diuji manual; RBAC menu sama.
+#### S12 · Gambar & lazy load
+- §8: `AppImage`, `scripts/optimize-images.mjs`, rename file berspasi, `Lazy*`, preload hero/logo.
+- **DoD:** 0 `<img>` mentah; Lighthouse mobile `/beranda` Performance ≥ 90, LCP < 2,5 s, CLS < 0,1.
 
-#### S10 · Pecah halaman gemuk
-- Target R5/R6: `admin-area/index.vue` (743), `organizations` (608), `sandbox` (549), `admin-area/struktur-pengurus` (527), `users` (506), `cari-teman` (464), `Highlight-terkini/form` (436).
-- `error.vue` dari `not-found-01`; `tabs`/`accordion` di halaman profil & zona kampus bila memang sudah ada perilaku serupa.
-- **DoD:** tidak ada page > 80 baris, tidak ada komponen > 250 baris (kecuali `components/ui`); perilaku identik.
+#### S13 · SEO, a11y & QA akhir
+- Sitemap, robots, canonical, OG, judul unik; Playwright parity + smoke; emulator bila ada.
+- **DoD:** semua cek hijau; `docs/ARCHITECTURE.md` ditulis.
 
-### FASE E — Optimasi & Rilis
-
-#### S11 · Gambar & lazy load
-- §8 seluruhnya: `AppImage`, `scripts/optimize-images.mjs`, rename file berspasi, `Lazy*` untuk komponen berat, preload hero & logo.
-- **DoD:** 0 `<img>` mentah (grep), Lighthouse mobile `/beranda`: Performance ≥ 90, LCP < 2,5 s, CLS < 0,1.
-
-#### S12 · SEO, aksesibilitas & QA akhir
-- Cek sitemap, robots, canonical, OG image, `lang="id"`, judul unik per halaman.
-- Playwright: route parity vs baseline + smoke (buka semua rute publik, login admin dummy di emulator, 1 CRUD).
-- Uji di Firebase Emulator Suite (Auth/Firestore/Functions) bila tersedia.
-- **DoD:** semua cek hijau; `docs/ARCHITECTURE.md` ditulis (ringkasan file ini untuk dev baru).
-
-#### S13 · Cutover
-- Deploy preview channel Firebase (`firebase hosting:channel:deploy refactor`), uji di HP nyata.
-- Bandingkan cache header, login, passkey (passkey terikat domain/RP ID — **uji di domain produksi/preview yang benar**).
-- Merge ke `main` → deploy produksi; siapkan rollback (deploy versi lama dari `ormawautsby`).
-- **DoD:** produksi jalan 48 jam tanpa regresi yang dilaporkan.
+#### S14 · Cutover
+- Preview channel Firebase, uji HP nyata & passkey (RP ID); merge `main`; rencana rollback.
+- **DoD:** produksi 48 jam tanpa regresi.
 
 ---
 
@@ -768,15 +789,15 @@ Temuan saat audit kode baseline (belum diubah — sesuai R1):
 | T1 | URL `/dashboard/Highlight-terkini` pakai huruf kapital | **Pertahankan.** Opsi nanti: tambah alias `/dashboard/highlight-terkini` (redirect) — butuh persetujuan |
 | T2 | Sidebar menautkan rute yang **belum ada**: `/dashboard/admin-area/{profil,event,galeri,keanggotaan,pengaturan}` | Pertahankan link (fitur tetap). Sesudah `error.vue` jadi, tetap 404 seperti sekarang. Perlu keputusan: sembunyikan atau buatkan halaman |
 | T3 | Navbar menautkan `/market` yang tidak ada | Sama seperti T2 |
-| T4 | Dua area admin paralel: `admin-area/*` (legacy) dan `users`/`organizations`/`Highlight-terkini` | Pertahankan keduanya; usulan penggabungan setelah S13 |
-| T5 | Role `mahasiswa` dipakai di plugin tapi tidak ada di tipe `UserRole` | Tambah di tipe (S3), logika tidak diubah |
+| T4 | Dua area admin paralel: `admin-area/*` (legacy) dan `users`/`organizations`/`Highlight-terkini` | Pertahankan keduanya; usulan penggabungan setelah S14 |
+| T5 | Role `mahasiswa` dipakai di plugin tapi tidak ada di tipe `UserRole` | Tambah di tipe (S2), logika tidak diubah |
 | T6 | Dokumen user yang belum ada dianggap `mahasiswa` | Pertahankan; catat sebagai risiko keamanan ringan (rules Firestore tetap penjaga) |
 | T7 | `/sandbox` ikut ter-deploy ke produksi | Pertahankan (dipindah ke `(dev)`), usulan: nonaktifkan di produksi via `routeRules` — butuh persetujuan |
-| T8 | 🔴 **KRITIS:** `POST /api/create-user` & `/api/delete-user` **tidak memeriksa siapa pemanggilnya** (tidak ada `verifyIdToken`/cookie). Siapa pun yang tahu URL-nya bisa membuat akun `SUPER_ADMIN` atau menghapus user lewat Firebase Admin | Satu-satunya pengecualian R1 yang direkomendasikan: di S6a pasang `requireRole('SUPER_ADMIN')` (pemakaian sah dari dashboard tidak berubah, hanya pemanggil tanpa hak yang ditolak). **Butuh persetujuan Q0** — idealnya di-hotfix juga di repo produksi sekarang |
-| T9 | Nama file gambar berspasi | Rename di S11 |
-| T10 | Passkey (WebAuthn) terikat RP ID/domain | Uji ulang di setiap domain (preview & produksi) di S13 |
+| T8 | 🔴 **KRITIS:** `POST /api/create-user` & `/api/delete-user` **tidak memeriksa siapa pemanggilnya** (tidak ada `verifyIdToken`/cookie). Siapa pun yang tahu URL-nya bisa membuat akun `SUPER_ADMIN` atau menghapus user lewat Firebase Admin | Satu-satunya pengecualian R1 yang direkomendasikan: di S7 pasang `requireRole('SUPER_ADMIN')` (pemakaian sah dari dashboard tidak berubah, hanya pemanggil tanpa hak yang ditolak). **Butuh persetujuan Q0** — idealnya di-hotfix juga di repo produksi sekarang |
+| T9 | Nama file gambar berspasi | Rename di S12 |
+| T10 | Passkey (WebAuthn) terikat RP ID/domain | Uji ulang di setiap domain (preview & produksi) di S14 |
 | T11 | ISR + konten spesifik user | Diselesaikan dengan `AuthAction` client-side (§6.4) |
-| T12 | Tailwind v4 mengubah beberapa nama kelas | `@tailwindcss/upgrade` + screenshot diff di S7 |
+| T12 | Tailwind v4 mengubah beberapa nama kelas | `@tailwindcss/upgrade` + screenshot diff di S9 |
 
 Pertanyaan untuk pemilik proyek (jawab di sini):
 - [ ] Q0 — T8: setuju API `create-user`/`delete-user` diamankan (wajib SUPER_ADMIN)? Hotfix di produksi juga?
@@ -792,20 +813,21 @@ Pertanyaan untuk pemilik proyek (jawab di sini):
 | Sesi | Judul | Status | Tanggal | PR | Catatan |
 |---|---|---|---|---|---|
 | — | Golden Plan disusun | ✅ | 2026-11-01 | — | audit ormawautsby, kliping-ui, Fibidy-Client |
+| — | Golden Plan v2: struktur final datar | ✅ | 2026-11-01 | — | tanpa route group, fitur datar, Fase A struktur → Fase B perbaikan |
 | S0 | Bootstrap baseline | ⬜ | | | |
 | S1 | Tooling & kebersihan root | ⬜ | | | |
-| S2 | Route groups & layout | ⬜ | | | |
-| S3 | Konstanta, tipe & utils | ⬜ | | | |
-| S4 | Firebase service layer & features | ⬜ | | | |
-| S5 | routeRules + SSR data publik | ⬜ | | | |
-| S6a | Session cookie `__session` | ⬜ | | | |
-| S6b | Tombol Dashboard + Cookie Consent | ⬜ | | | |
-| S7 | Tailwind v4 + Kliping init | ⬜ | | | |
-| S8 | Marketing UI → Kliping | ⬜ | | | |
-| S9 | Dashboard UI → Kliping | ⬜ | | | |
-| S10 | Pecah halaman gemuk | ⬜ | | | |
-| S11 | Gambar & lazy load | ⬜ | | | |
-| S12 | SEO, a11y & QA | ⬜ | | | |
-| S13 | Cutover | ⬜ | | | |
+| S2 | Fondasi: constants/types/utils/services/store/layout | ⬜ | | | |
+| S3 | Feature data layer | ⬜ | | | |
+| S4 | Pecah pages publik | ⬜ | | | |
+| S5 | Pecah pages auth & dashboard | ⬜ | | | |
+| S6 | routeRules + SSR data publik | ⬜ | | | |
+| S7 | Session cookie `__session` | ⬜ | | | |
+| S8 | Tombol Dashboard + Cookie Consent | ⬜ | | | |
+| S9 | Tailwind v4 + Kliping init | ⬜ | | | |
+| S10 | Marketing UI → Kliping | ⬜ | | | |
+| S11 | Dashboard & login UI → Kliping | ⬜ | | | |
+| S12 | Gambar & lazy load | ⬜ | | | |
+| S13 | SEO, a11y & QA | ⬜ | | | |
+| S14 | Cutover | ⬜ | | | |
 
 Legenda: ⬜ belum · 🟨 jalan · ✅ selesai · ⛔ diblokir
