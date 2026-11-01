@@ -31,8 +31,10 @@ const failDir = join(root, 'tests/e2e/.failures')
 const only = process.argv.find((a) => a.startsWith('--only='))?.slice(7)
 const PROJECT = 'demo-ormawa'
 const HOST = '127.0.0.1'
-const PORT = process.env.PORT || '3996'
-const BASE_URL = `http://${HOST}:${PORT}`
+// WebAuthn di server memakai rpID 'localhost' & origin http://localhost:3000
+// (hardcoded, lihat GOLDEN-PLAN T20) → tes passkey hanya bisa di alamat ini.
+const PORT = process.env.PORT || '3000'
+const BASE_URL = `http://localhost:${PORT}`
 
 // Admin SDK di proses tes → emulator (seed & verifikasi data)
 process.env.FIRESTORE_EMULATOR_HOST = `${HOST}:8080`

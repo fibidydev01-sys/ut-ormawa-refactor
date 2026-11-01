@@ -96,6 +96,93 @@ const AUTH_SCENARIOS = [
   },
 ]
 
+const PASSWORDLESS_SCENARIOS = [
+  {
+    name: 'auth: magic link email → login; dokumen mahasiswa baru ditolak rules (perilaku lama)',
+    async run({ page, admin, BASE_URL }) {
+      await page.goto(`${BASE_URL}/login/admin`, { waitUntil: 'load' })
+      await page.waitForFunction(() => document.querySelector('#__nuxt')?.__vue_app__)
+      await page.getByPlaceholder('nama@gmail.com').fill('baru@student.test')
+      await page.getByRole('button', { name: 'Kirim Link' }).click()
+      await eventually(
+        async () =>
+          (await page.evaluate(() => localStorage.getItem('emailForSignIn'))) ===
+          'baru@student.test',
+        'email tidak disimpan di localStorage',
+      )
+      const { oobCodes } = await (
+        await fetch(`http://127.0.0.1:9099/emulator/v1/projects/demo-ormawa/oobCodes`)
+      ).json()
+      const code = oobCodes.find(
+        (c) => c.email === 'baru@student.test' && c.requestType === 'EMAIL_SIGNIN',
+      )
+      assert(code, 'tautan login tidak dikirim')
+      const link = new URL(code.oobLink)
+      const continueUrl = new URL(link.searchParams.get('continueUrl'))
+      assert(
+        continueUrl.searchParams.get('userEmail') === 'baru@student.test',
+        'continueUrl tanpa userEmail',
+      )
+      continueUrl.searchParams.set('mode', 'signIn')
+      continueUrl.searchParams.set('oobCode', code.oobCode)
+      continueUrl.searchParams.set('apiKey', 'demo-api-key')
+      await page.goto(continueUrl.toString(), { waitUntil: 'load' })
+      // Login Auth sukses, tapi setDoc role 'mahasiswa' ditolak rules → pesan error (T19)
+      await page
+        .getByText('Tautan login tidak valid, sudah digunakan, atau telah kedaluwarsa.')
+        .waitFor()
+      const user = await admin.auth.getUserByEmail('baru@student.test')
+      assert(user, 'akun tidak dibuat oleh sign-in link')
+      assert(
+        !(await admin.db.doc(`users/${user.uid}`).get()).exists,
+        'dokumen mahasiswa ternyata tersimpan — perilaku berubah',
+      )
+    },
+  },
+  {
+    name: 'auth: daftar passkey di admin-area lalu login sidik jari (authenticator virtual)',
+    async run({ page, admin, BASE_URL }) {
+      const cdp = await page.context().newCDPSession(page)
+      await cdp.send('WebAuthn.enable')
+      await cdp.send('WebAuthn.addVirtualAuthenticator', {
+        options: {
+          protocol: 'ctap2',
+          transport: 'internal',
+          hasResidentKey: true,
+          hasUserVerification: true,
+          isUserVerified: true,
+          automaticPresenceSimulation: true,
+        },
+      })
+      const uid = await seedUser(admin, {
+        email: 'legacy@ormawa.test',
+        role: 'super_admin',
+        fullName: 'Legacy',
+      })
+      await loginAdmin(page, BASE_URL, 'legacy@ormawa.test')
+      await page.waitForURL('**/dashboard')
+      await spaNavigate(page, '/dashboard/admin-area')
+      await page.getByRole('button', { name: 'Daftarkan Perangkat Ini' }).click()
+      await page.getByText('Hore! Perangkat ini berhasil didaftarkan.').waitFor()
+      const keys = await admin.db.collection(`users/${uid}/passkeys`).get()
+      assert(keys.size === 1, 'passkey tidak tersimpan di users/{uid}/passkeys')
+
+      // admin-area punya header sendiri: logout lewat dropdown profil → '/'
+      await page.locator('button:has(.rounded-full)').first().click()
+      await page.getByRole('button', { name: 'Logout' }).click()
+      await page.waitForURL((u) => !u.pathname.startsWith('/dashboard'))
+      await page.goto(`${BASE_URL}/login/admin`, { waitUntil: 'load' })
+      await page.waitForFunction(() => document.querySelector('#__nuxt')?.__vue_app__)
+      await page.getByRole('button', { name: /Masuk dengan Sidik Jari/ }).click()
+      await page.waitForURL('**/dashboard')
+      await eventually(
+        async () => (await page.locator('aside').innerText()).includes('Users'),
+        'login passkey tidak masuk sebagai super admin',
+      )
+    },
+  },
+]
+
 const ORGANIZATION_SCENARIOS = [
   {
     name: 'organisasi: tambah (dengan logo), edit, hapus',
@@ -169,6 +256,7 @@ const ORGANIZATION_SCENARIOS = [
 
 export const SCENARIOS = [
   ...AUTH_SCENARIOS,
+  ...PASSWORDLESS_SCENARIOS,
   ...ORGANIZATION_SCENARIOS,
   ...ARTICLE_SCENARIOS,
   ...ADMIN_SCENARIOS,
