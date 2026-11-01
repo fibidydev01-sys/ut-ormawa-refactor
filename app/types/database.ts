@@ -24,6 +24,14 @@ import type { Timestamp } from 'firebase/firestore'
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN'
 
 /**
+ * Role yang bisa muncul di state auth client (`userRole`).
+ * Selain role admin, plugin Firebase mengisi `'mahasiswa'` untuk akun
+ * yang tidak punya dokumen `users` atau gagal dibaca (lihat GOLDEN-PLAN T5).
+ * Nilai lowercase lama (`'super_admin'`, `'admin'`) juga masih mungkin ada.
+ */
+export type AppRole = UserRole | 'mahasiswa'
+
+/**
  * Modul akses di Admin Panel.
  * Digunakan untuk mengatur izin akses spesifik (terutama bagi role ADMIN).
  */
@@ -195,7 +203,8 @@ export interface ArticleDocument {
  * Field `id`, `organization_name`, `organization_type`, `created_at`,
  * dan `updated_at` dikecualikan karena diisi otomatis oleh helper function.
  */
-export interface Article extends ArticleDocument {}
+/** Alias artikel untuk tampilan (bentuk sama dengan ArticleDocument). */
+export type Article = ArticleDocument
 
 export type CreateArticlePayload = Omit<
   ArticleDocument,

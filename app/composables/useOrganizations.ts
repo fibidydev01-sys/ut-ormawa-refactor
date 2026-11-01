@@ -14,7 +14,7 @@
 import type {
   OrganizationDocument,
   OrganizationType,
-} from '~/types/database.types'
+} from '~/types/database'
 
 export const useOrganizations = () => {
   const { $db } = useNuxtApp()

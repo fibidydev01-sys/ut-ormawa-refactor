@@ -312,9 +312,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import type { UserDocument, UserRole, OrganizationDocument, AdminModule } from '~/types/database.types'
+import type { UserDocument, UserRole, OrganizationDocument, AdminModule } from '~/types/database'
 
-definePageMeta({ layout: 'admin', middleware: 'auth' })
+definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 useHead({ title: 'Pengguna — Admin Panel Ormawa' })
 
 const { getAllUsers, createUser, updateUser, deleteUser } = useUsers()

@@ -16,7 +16,7 @@ import type {
   CreateArticlePayload,
   OrganizationDocument,
   UpdateArticlePayload,
-} from '~/types/database.types'
+} from '~/types/database'
 
 export const useArticles = () => {
   const { $db } = useNuxtApp()

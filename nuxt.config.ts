@@ -33,6 +33,10 @@ export default defineNuxtConfig({
     }
   },
 
+  // Auto-import komponen tanpa prefix folder: components/layout/site-header.vue
+  // → <SiteHeader />. Nama file komponen harus unik (GOLDEN-PLAN §4.2).
+  components: [{ path: '~/components', pathPrefix: false }],
+
   modules: [
     '@pinia/nuxt',
     '@nuxtjs/tailwindcss',

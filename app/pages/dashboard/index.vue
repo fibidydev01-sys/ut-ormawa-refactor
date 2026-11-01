@@ -40,10 +40,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { UserRole } from '~/types/database.types'
+import type { UserRole } from '~/types/database'
 
 definePageMeta({
-  layout: 'admin',
+  layout: 'dashboard',
   middleware: 'auth',
 })
 

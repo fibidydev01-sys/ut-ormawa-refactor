@@ -27,9 +27,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const baselineFile = join(root, 'tests/baseline/typecheck.json')
 const projects = ['.nuxt/tsconfig.app.json', '.nuxt/tsconfig.server.json']
 
-if (!existsSync(join(root, projects[0]))) {
-  spawnSync('npx', ['nuxt', 'prepare'], { cwd: root, stdio: 'inherit' })
-}
+// Selalu regenerasi tipe .nuxt (layout, komponen, auto-import) supaya
+// hasil tidak basi setelah file dipindah/di-rename.
+spawnSync('npx', ['nuxt', 'prepare'], { cwd: root, stdio: 'ignore' })
 
 const counts = {}
 const lines = []

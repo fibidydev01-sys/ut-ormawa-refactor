@@ -37,6 +37,13 @@ export default createConfigForNuxt({
     },
   })
   .append({
+    // Nama layout/page/error mengikuti konvensi file-routing Nuxt
+    // (default.vue, index.vue, [slug].vue) — aturan multi-kata tidak berlaku.
+    name: 'ormawa/nuxt-conventions',
+    files: ['app/layouts/**/*.vue', 'app/pages/**/*.vue', 'app/error.vue'],
+    rules: { 'vue/multi-word-component-names': 'off' },
+  })
+  .append({
     name: 'ormawa/ignores',
     ignores: ['.output/**', '.nuxt/**', 'node_modules/**', 'public/**', 'scripts/legacy/**'],
   })

@@ -694,6 +694,13 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 - `services/firebase.ts` (lazy getter) + `stores/auth.ts` (Pinia) — `useState('firebaseUser'|'userRole'|…)` lama tetap diisi selama transisi.
 - `Navbar`/`Footer`/`Sidebar`/`HeaderProfile` → `components/layout/*` (dipecah, markup identik). `layouts/admin.vue` → `dashboard.vue`.
 - **DoD:** route parity identik; screenshot identik; tidak ada array menu di template.
+- **Catatan hasil S2:**
+  - Infrastruktur tes: `tests/layer` (aktif hanya bila `ORMAWA_TEST=1`, yaitu `npm run build:test`) mengisi state auth dari cookie `__ormawa_test_auth`, sehingga dashboard bisa difoto. `test:screens` kini 71 skenario: 44 rute publik/login, hover tiap dropdown, menu mobile terbuka penuh, 8 halaman dashboard sebagai SUPER_ADMIN, dashboard ADMIN terbatas, dropdown profil, dan sidebar mobile. Baseline diambil dari kode **sebelum** refactor.
+  - `stores/auth.ts` membungkus ref `useState` lama (bukan menggantikan), jadi halaman lama tetap sinkron. `useState('firebaseUser'|…)` mentah dihapus bertahap di S3–S5.
+  - Layout `admin` langsung di-rename ke `dashboard` di semua page (tanpa alias).
+  - `utils/date.ts`, `utils/slug.ts`, `constants/access-modules.ts` **belum** dibuat — dibuat saat ada pemakainya (S3–S5), bukan file kosong.
+  - Ikon SVG navigasi disatukan di `constants/icons.ts` + `nav-icon.vue` (path disalin otomatis dari file lama); diganti Lucide di S10.
+  - `RichTextEditor`: `setContent(value, false)` → `setContent(value)` — di TipTap v3 argumen `false` memang diabaikan, perilaku runtime sama.
 
 #### S3 · Feature data layer
 - Bentuk `features/*`; pindah & pecah composables jadi `use-x.ts` + `x.service.ts` (§4.3).
@@ -808,6 +815,8 @@ Temuan saat audit kode baseline (belum diubah — sesuai R1):
 | T9 | Nama file gambar berspasi | Rename di S12 |
 | T10 | Passkey (WebAuthn) terikat RP ID/domain | Uji ulang di setiap domain (preview & produksi) di S14 |
 | T11 | ISR + konten spesifik user | Diselesaikan dengan `AuthAction` client-side (§6.4) |
+| T15 | `/dashboard/mahasiswa` & `/edit-profil` tidak memakai middleware `auth` — halaman terbuka untuk siapa pun; data hanya dimuat bila sudah login (Firestore rules tetap menjaga data) | Dibiarkan (R1). Usulan: pasang gate khusus mahasiswa di S7 — butuh persetujuan |
+| T16 | SSR `/dashboard/**` tanpa login **menunggu 5 detik** (timeout middleware menunggu `isAuthReady` yang hanya diisi di client) baru redirect 302 ke `/login/admin` — terukur 5,1 s vs 0,05 s untuk `/beranda` | Diselesaikan oleh session cookie di S7 (server langsung tahu status login) |
 | T12 | Tailwind v4 mengubah beberapa nama kelas | `@tailwindcss/upgrade` + screenshot diff di S9 |
 | T13 | 🟠 `create-admin.js` berisi password SUPER_ADMIN hardcoded (`SuperAdmin123!`) dan sudah ada di riwayat git | ✅ S1: `scripts/create-admin.js` kini baca `ADMIN_EMAIL`/`ADMIN_PASSWORD` dari env. ⚠ Password lama tetap ada di riwayat git `ormawautsby` & repo ini → **ganti password akun itu di produksi bila masih dipakai** |
 | T14 | 🟠 Dashboard (`admin-area/index.vue`, `kelola-user.vue`) menampilkan `user.password` — artinya password tersimpan **plaintext** di dokumen Firestore `users` | Fitur dibekukan (R1) selama Fase A; usulan hapus field & tampilan ini setelah Fase A — butuh persetujuan (Q5) |
@@ -831,7 +840,7 @@ Pertanyaan untuk pemilik proyek (jawab di sini):
 | — | Golden Plan v2.1: penamaan file kebab-case | ✅ | 2026-11-01 | — | `nama-file.vue`, `use-nama.ts`; tag template tetap PascalCase |
 | S0 | Bootstrap baseline | ✅ | 2026-11-01 | — | import `ormawautsby@0e2ccca`; `test:routes` (33 page, 8 API) & `test:screens` (22 rute × desktop/mobile) baseline; build hijau |
 | S1 | Tooling & kebersihan root | ✅ | 2026-11-01 | — | ESLint 0 error / 299 warning warisan; typecheck ratchet 26 error warisan di 8 file; script → `scripts/` (+`legacy/`); `docs/database.md`; README; CI `check.yml`; T13 diperbaiki di script |
-| S2 | Fondasi: constants/types/utils/services/store/layout | ⬜ | | | |
+| S2 | Fondasi: constants/types/utils/services/store/layout | ✅ | 2026-11-01 | — | Navbar 551 baris → 7 komponen ≤ 177 baris + `constants/nav.ts`; Sidebar/HeaderProfile/admin layout → `dashboard-*`/`nav-user` + `constants/dashboard-menu.ts`; Pinia `stores/auth.ts`; `services/firebase.ts`; TipTap disamakan 3.32.2 (typecheck 26 → 19); screenshot parity diperluas ke 71 skenario (dashboard + menu) — semua identik |
 | S3 | Feature data layer | ⬜ | | | |
 | S4 | Pecah pages publik | ⬜ | | | |
 | S5 | Pecah pages auth & dashboard | ⬜ | | | |

@@ -389,11 +389,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import type { OrganizationDocument, OrganizationType } from '~/types/database.types'
+import type { OrganizationDocument, OrganizationType } from '~/types/database'
 
 // ── Meta ─────────────────────────────────────────────────────
 definePageMeta({
-  layout: 'admin',
+  layout: 'dashboard',
   middleware: 'auth',
 })
 

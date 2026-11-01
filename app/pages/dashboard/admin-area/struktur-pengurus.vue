@@ -299,7 +299,7 @@ import { ref, onMounted } from 'vue'
 import type { PengurusMember, BidangItem } from '~/composables/usePengurus'
 
 definePageMeta({
-  layout: 'admin',
+  layout: 'dashboard',
   middleware: 'auth',
 })
 

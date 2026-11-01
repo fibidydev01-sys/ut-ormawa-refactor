@@ -11,7 +11,7 @@
  * ============================================================
  */
 
-import type { UserDocument } from '~/types/database.types'
+import type { UserDocument } from '~/types/database'
 
 export const useUsers = () => {
   const { $db } = useNuxtApp()

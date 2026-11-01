@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { onBeforeUnmount, watch } from 'vue'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 
@@ -110,7 +110,10 @@ watch(
     if (!editor.value) return
     const currentValue = editor.value.getHTML()
     if (value !== currentValue) {
-      editor.value.commands.setContent(value || '', false)
+      // TipTap v3: argumen ke-2 adalah objek opsi. Kode lama mengirim `false`
+      // yang saat runtime diabaikan (emitUpdate tetap default `true`) —
+      // perilaku itu dipertahankan apa adanya.
+      editor.value.commands.setContent(value || '')
     }
   }
 )

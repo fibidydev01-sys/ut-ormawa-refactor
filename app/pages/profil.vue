@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 font-sans text-slate-800">
-    <Navbar />
+    <SiteHeader />
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -8,7 +8,7 @@
         <NuxtPage />
       </div>
     </main>
-    <Footer />
+    <SiteFooter />
   </div>
 </template>
 

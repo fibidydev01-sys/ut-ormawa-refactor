@@ -1,6 +1,6 @@
 <template>
   <main class="min-h-screen bg-gray-50 font-sans text-slate-800">
-    <Navbar />
+    <SiteHeader />
 
     <!-- Loading State -->
     <div v-if="isLoading" class="flex items-center justify-center min-h-[60vh]">
@@ -97,14 +97,14 @@
       </div>
     </template>
 
-    <Footer />
+    <SiteFooter />
   </main>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import type { ArticleDocument } from '~/types/database.types'
+import type { ArticleDocument } from '~/types/database'
 import type { Timestamp } from 'firebase/firestore'
 
 const route = useRoute()

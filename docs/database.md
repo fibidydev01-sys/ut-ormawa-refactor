@@ -4,7 +4,7 @@
 
 | File | Fungsi |
 |---|---|
-| [database.types.ts](../app/types/database.types.ts) | Type definitions semua koleksi Firestore |
+| [database.ts](../app/types/database.ts) | Type definitions semua koleksi Firestore |
 | [useArticles.ts](../app/composables/useArticles.ts) | Helper functions operasi CRUD artikel |
 | [useOrganizations.ts](../app/composables/useOrganizations.ts) | Helper functions operasi CRUD organisasi |
 | [firestore.rules](../firestore.rules) | Security Rules Firestore |

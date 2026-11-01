@@ -1,10 +1,20 @@
-import { initializeApp, getApps } from 'firebase/app'
-import { getAuth, onAuthStateChanged } from 'firebase/auth'
-import type { User, Auth } from 'firebase/auth'
-import { getFirestore, doc, getDoc } from 'firebase/firestore'
+// ============================================================
+// FIREBASE CLIENT PLUGIN
+// File: app/plugins/firebase.client.ts
+//
+// [S2] Inisialisasi & pembacaan role dipindah ke services/firebase.ts,
+// state auth ke stores/auth.ts. Plugin ini hanya merangkai:
+//   1. initFirebase()          → provide $auth, $db, $storage
+//   2. onAuthStateChanged      → isi auth store (user, role, modul)
+// Perilaku identik dengan versi lama.
+// ============================================================
+
+import { onAuthStateChanged } from 'firebase/auth'
+import type { Auth } from 'firebase/auth'
 import type { Firestore } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage'
 import type { FirebaseStorage } from 'firebase/storage'
+import { initFirebase, fetchUserAccess } from '~/services/firebase'
+import { useAuthStore } from '~/stores/auth'
 
 declare module '#app' {
   interface NuxtApp {
@@ -24,68 +34,34 @@ declare module 'vue' {
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
 
-  const firebaseConfig = {
+  const firebase = initFirebase({
     apiKey: config.public.firebaseApiKey,
     authDomain: config.public.firebaseAuthDomain,
     projectId: config.public.firebaseProjectId,
     storageBucket: config.public.firebaseStorageBucket,
     messagingSenderId: config.public.firebaseMessagingSenderId,
     appId: config.public.firebaseAppId,
-  }
+  })
+  if (!firebase) return // Konfigurasi tidak ada
 
-  // Initialize Firebase only once
-  let app
-  if (!getApps().length && firebaseConfig.apiKey) {
-    app = initializeApp(firebaseConfig)
-  } else if (getApps().length) {
-    app = getApps()[0]
-  }
+  nuxtApp.provide('auth', firebase.auth)
+  nuxtApp.provide('db', firebase.db)
+  nuxtApp.provide('storage', firebase.storage)
 
-  if (!app) return // Skip if config is missing
+  const authStore = useAuthStore()
 
-  const auth = getAuth(app)
-  const db = getFirestore(app)
-  const storage = getStorage(app)
+  onAuthStateChanged(firebase.auth, async (user) => {
+    authStore.user = user
 
-  // Sediakan auth dan db untuk digunakan di komponen lain
-  nuxtApp.provide('auth', auth)
-  nuxtApp.provide('db', db)
-  nuxtApp.provide('storage', storage)
-
-  // State global untuk User dan Role
-  const firebaseUser = useState<User | null>('firebaseUser', () => null)
-  const userRole = useState<string | null>('userRole', () => null)
-  const accessModules = useState<string[]>('accessModules', () => [])
-  const isAuthReady = useState<boolean>('isAuthReady', () => false)
-
-  // Listen ke status autentikasi
-  onAuthStateChanged(auth, async (user) => {
-    firebaseUser.value = user
-    
     if (user) {
-      // Ambil role dari Firestore
-      try {
-        const userDocRef = doc(db, 'users', user.uid)
-        const userDocSnap = await getDoc(userDocRef)
-        if (userDocSnap.exists()) {
-          const data = userDocSnap.data()
-          userRole.value = data.role || 'mahasiswa'
-          accessModules.value = Array.isArray(data.access_modules) ? data.access_modules : []
-        } else {
-          // Jika dokumen belum ada, asumsikan mahasiswa baru (akan di-handle pembuatannya nanti)
-          userRole.value = 'mahasiswa'
-          accessModules.value = []
-        }
-      } catch (error) {
-        console.error("Error fetching user role:", error)
-        userRole.value = 'mahasiswa'
-        accessModules.value = []
-      }
+      const access = await fetchUserAccess(firebase.db, user.uid)
+      authStore.role = access.role
+      authStore.accessModules = access.accessModules
     } else {
-      userRole.value = null
-      accessModules.value = []
+      authStore.role = null
+      authStore.accessModules = []
     }
-    
-    isAuthReady.value = true
+
+    authStore.isReady = true
   })
 })

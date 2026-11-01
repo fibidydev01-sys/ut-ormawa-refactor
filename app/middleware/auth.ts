@@ -3,7 +3,7 @@
  * NUXT ROUTE MIDDLEWARE: auth
  * Proteksi semua rute /dashboard dengan Role-Based Access Control.
  *
- * Hierarki Role (dari database.types.ts):
+ * Hierarki Role (dari types/database.ts):
  *   SUPER_ADMIN → Akses ke semua halaman dashboard
  *   ADMIN       → Hanya /dashboard/Highlight-terkini, redirect jika akses /users atau /organizations
  *
@@ -12,16 +12,8 @@
  * ============================================================
  */
 
-import type { UserRole } from '~/types/database.types'
-
-/** Normalkan role dari berbagai format menjadi UserRole yang valid */
-function normalizeRole(rawRole: unknown): UserRole | null {
-  if (typeof rawRole !== 'string') return null
-  const upperRole = rawRole.toUpperCase()
-  if (upperRole === 'SUPER_ADMIN') return 'SUPER_ADMIN'
-  if (upperRole === 'ADMIN') return 'ADMIN'
-  return null
-}
+import type { UserRole } from '~/types/database'
+import { normalizeRole } from '~/utils/role'
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const firebaseUser = useState('firebaseUser')

@@ -1,7 +1,7 @@
 <template>
   <main class="min-h-screen bg-gray-50 font-sans text-slate-800">
     <!-- 1. NAVIGATION BAR -->
-    <Navbar />
+    <SiteHeader />
 
     <!-- Hero Section -->
     <section class="relative bg-admiral text-white pt-20 pb-28 md:pb-36 px-6 md:px-12 overflow-hidden">
@@ -235,13 +235,13 @@
       </div>
     </section>
 
-    <Footer />
+    <SiteFooter />
   </main>
 </template>
 
 <script setup lang="ts">
 import { computed, h, onMounted, ref } from 'vue'
-import type { Article } from '~/types/database.types'
+import type { Article } from '~/types/database'
 import type { Timestamp } from 'firebase/firestore'
 
 useSeoMeta({

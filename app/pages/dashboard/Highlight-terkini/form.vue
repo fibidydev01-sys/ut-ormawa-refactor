@@ -203,9 +203,9 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { ArticleStatus, CreateArticlePayload, UpdateArticlePayload, OrganizationDocument, ArticleDocument, UserDocument, OrganizationType } from '~/types/database.types'
+import type { ArticleStatus, CreateArticlePayload, UpdateArticlePayload, OrganizationDocument, ArticleDocument, UserDocument, OrganizationType } from '~/types/database'
 
-definePageMeta({ layout: 'admin', middleware: 'auth' })
+definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 useHead({ title: 'Form Artikel — Admin Panel Ormawa' })
 
 const route = useRoute()

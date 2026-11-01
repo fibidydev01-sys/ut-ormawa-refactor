@@ -1,6 +1,6 @@
 <template>
   <main class="min-h-screen bg-slate-50 font-sans text-slate-800">
-    <Navbar />
+    <SiteHeader />
 
     <!-- Hero Section -->
     <section class="relative bg-slate-900 text-white py-20 px-6 md:px-12 overflow-hidden">
@@ -200,7 +200,7 @@
       </div>
     </div>
     
-    <Footer />
+    <SiteFooter />
 
     <!-- Modal Tambah Profil -->
     <div v-if="showProfileModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4 py-6 overflow-y-auto">

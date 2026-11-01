@@ -1,6 +1,6 @@
 <template>
   <main class="min-h-screen bg-gray-50 font-sans text-slate-800">
-    <Navbar />
+    <SiteHeader />
 
     <!-- Hero Section -->
     <section class="relative bg-slate-900 text-white py-20 px-6 md:px-12 overflow-hidden">
@@ -119,13 +119,13 @@
       </div>
     </div>
     
-    <Footer />
+    <SiteFooter />
   </main>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import type { Article } from '~/types/database.types'
+import type { Article } from '~/types/database'
 import type { Timestamp } from 'firebase/firestore'
 
 useSeoMeta({

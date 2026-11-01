@@ -128,9 +128,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { ArticleDocument } from '~/types/database.types'
+import type { ArticleDocument } from '~/types/database'
 
-definePageMeta({ layout: 'admin', middleware: 'auth' })
+definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 useHead({ title: 'Artikel — Admin Panel Ormawa' })
 
 const { getAllArticles, getArticlesByOrganization, deleteArticle } = useArticles()
