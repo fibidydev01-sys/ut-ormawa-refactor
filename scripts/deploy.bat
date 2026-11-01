@@ -1,9 +1,11 @@
 @echo off
+rem Dijalankan dari mana pun: pindah ke root repo dulu.
+cd /d "%~dp0.."
 echo Building Nuxt App...
 call npm run build
 
 echo Preparing Server for Firebase deployment...
-node fix-deploy.cjs
+node scripts\fix-deploy.cjs
 
 echo Backing up package-lock.json...
 if exist package-lock.json move package-lock.json package-lock.json.bak

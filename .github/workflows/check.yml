@@ -1,0 +1,47 @@
+# ============================================================
+# CHECK — jaring pengaman tiap PR & push non-main
+# File: .github/workflows/check.yml
+#
+# lint (0 error) · typecheck ratchet · route parity · build.
+# Screenshot parity (`npm run test:screens`) TIDAK jalan di CI:
+# render font beda antar mesin, jadi baseline-nya hanya valid di
+# mesin tempat baseline dibuat — dijalankan lokal tiap sesi.
+# Deploy tetap di firebase-deploy.yml (hanya push ke main).
+# ============================================================
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - main
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck (ratchet)
+        run: npm run typecheck
+
+      - name: Route parity
+        run: npm run test:routes
+
+      - name: Build
+        run: npm run build

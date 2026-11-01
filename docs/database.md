@@ -4,10 +4,10 @@
 
 | File | Fungsi |
 |---|---|
-| [database.types.ts](file:///d:/ornmawautsby/app/types/database.types.ts) | Type definitions semua koleksi Firestore |
-| [useArticles.ts](file:///d:/ornmawautsby/app/composables/useArticles.ts) | Helper functions operasi CRUD artikel |
-| [useOrganizations.ts](file:///d:/ornmawautsby/app/composables/useOrganizations.ts) | Helper functions operasi CRUD organisasi |
-| [firestore.rules](file:///d:/ornmawautsby/firestore.rules) | Security Rules Firestore |
+| [database.types.ts](../app/types/database.types.ts) | Type definitions semua koleksi Firestore |
+| [useArticles.ts](../app/composables/useArticles.ts) | Helper functions operasi CRUD artikel |
+| [useOrganizations.ts](../app/composables/useOrganizations.ts) | Helper functions operasi CRUD organisasi |
+| [firestore.rules](../firestore.rules) | Security Rules Firestore |
 
 ---
 

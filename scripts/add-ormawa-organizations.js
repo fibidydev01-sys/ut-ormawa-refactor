@@ -7,7 +7,7 @@ import { getFirestore } from 'firebase-admin/firestore'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json')
+const serviceAccountPath = path.join(__dirname, '..', 'serviceAccountKey.json')
 
 let serviceAccount
 

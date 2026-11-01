@@ -142,7 +142,8 @@ try {
       const name = fileName(route, vpName)
       await page.goto(BASE_URL + route, { waitUntil: 'networkidle' })
       await page.addStyleTag({
-        content: '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}',
+        content:
+          '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}',
       })
       await page.evaluate(() => document.fonts.ready)
       await page.waitForTimeout(300)
@@ -163,10 +164,17 @@ try {
       const res = await compare(cmpPage, readFileSync(basePath), shot)
       const ok = res.percent <= TOLERANCE && !res.sizeChanged
       if (!ok) {
-        writeFileSync(join(currentDir, name.replace('.png', '.diff.png')), Buffer.from(res.diffPng, 'base64'))
-        failures.push(`${name}: ${res.percent.toFixed(2)}% beda${res.sizeChanged ? ' (ukuran halaman berubah)' : ''}`)
+        writeFileSync(
+          join(currentDir, name.replace('.png', '.diff.png')),
+          Buffer.from(res.diffPng, 'base64'),
+        )
+        failures.push(
+          `${name}: ${res.percent.toFixed(2)}% beda${res.sizeChanged ? ' (ukuran halaman berubah)' : ''}`,
+        )
       }
-      console.log(`${ok ? '✔' : '✘'} ${name} — ${res.percent.toFixed(2)}%${res.sizeChanged ? ' (ukuran berubah)' : ''}`)
+      console.log(
+        `${ok ? '✔' : '✘'} ${name} — ${res.percent.toFixed(2)}%${res.sizeChanged ? ' (ukuran berubah)' : ''}`,
+      )
     }
     await context.close()
   }
@@ -176,7 +184,9 @@ try {
 }
 
 if (update) {
-  console.log(`\n✔ baseline ditulis: ${ROUTES.length} rute × ${Object.keys(VIEWPORTS).length} viewport`)
+  console.log(
+    `\n✔ baseline ditulis: ${ROUTES.length} rute × ${Object.keys(VIEWPORTS).length} viewport`,
+  )
 } else if (failures.length) {
   console.error(`\nScreenshot parity GAGAL (${failures.length}):\n- ` + failures.join('\n- '))
   console.error('Lihat tests/baseline/screens/current/*.diff.png — Golden Rule R4.')

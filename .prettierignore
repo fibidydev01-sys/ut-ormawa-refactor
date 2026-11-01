@@ -1,0 +1,7 @@
+.output
+.nuxt
+node_modules
+public
+package-lock.json
+tests/baseline
+scripts/legacy

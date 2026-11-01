@@ -682,6 +682,11 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 - `README.md` asli: dev, env, deploy.
 - CI job `check` (lint + typecheck + build + route parity) di PR; deploy tetap hanya `main`.
 - **DoD:** CI hijau; root hanya config; `app/` tidak tersentuh.
+- **Catatan hasil S1:**
+  - Lint: aturan gaya yang dilanggar baseline diturunkan ke `warn` (`eslint.config.mjs`, blok `ormawa/baseline-relaxed`). **Setiap file yang dipindah/dipecah di S2–S5 wajib 0 warning.** Di akhir S5 blok itu dihapus (kembali `error`).
+  - Typecheck: `tests/typecheck.mjs` = ratchet terhadap `tests/baseline/typecheck.json`. File yang dipindah dihitung sebagai file baru → harus 0 error. `RichTextEditor.vue` (7 error) disebabkan dua versi `@tiptap/core` (nested di `@tiptap/starter-kit`) — selesaikan dengan menyamakan versi paket TipTap saat dipindah di S2.
+  - Prettier: **jangan** format seluruh repo sekaligus (diff raksasa, susah review). Format hanya file yang disentuh: `npm run format -- <path>`.
+  - Screenshot parity tidak jalan di CI (render font beda antar mesin) — wajib dijalankan lokal tiap sesi.
 
 #### S2 · Fondasi: constants, types, utils, services, store, layout
 - `constants/nav.ts` (satu array desktop+mobile), `dashboard-menu.ts`, `access-modules.ts`.
@@ -804,7 +809,7 @@ Temuan saat audit kode baseline (belum diubah — sesuai R1):
 | T10 | Passkey (WebAuthn) terikat RP ID/domain | Uji ulang di setiap domain (preview & produksi) di S14 |
 | T11 | ISR + konten spesifik user | Diselesaikan dengan `AuthAction` client-side (§6.4) |
 | T12 | Tailwind v4 mengubah beberapa nama kelas | `@tailwindcss/upgrade` + screenshot diff di S9 |
-| T13 | 🟠 `create-admin.js` berisi password SUPER_ADMIN hardcoded (`SuperAdmin123!`) dan sudah ada di riwayat git | S1: ganti jadi baca dari env/argumen. **Ganti password akun itu di produksi bila masih dipakai** |
+| T13 | 🟠 `create-admin.js` berisi password SUPER_ADMIN hardcoded (`SuperAdmin123!`) dan sudah ada di riwayat git | ✅ S1: `scripts/create-admin.js` kini baca `ADMIN_EMAIL`/`ADMIN_PASSWORD` dari env. ⚠ Password lama tetap ada di riwayat git `ormawautsby` & repo ini → **ganti password akun itu di produksi bila masih dipakai** |
 | T14 | 🟠 Dashboard (`admin-area/index.vue`, `kelola-user.vue`) menampilkan `user.password` — artinya password tersimpan **plaintext** di dokumen Firestore `users` | Fitur dibekukan (R1) selama Fase A; usulan hapus field & tampilan ini setelah Fase A — butuh persetujuan (Q5) |
 
 Pertanyaan untuk pemilik proyek (jawab di sini):
@@ -825,7 +830,7 @@ Pertanyaan untuk pemilik proyek (jawab di sini):
 | — | Golden Plan v2: struktur final datar | ✅ | 2026-11-01 | — | tanpa route group, fitur datar, Fase A struktur → Fase B perbaikan |
 | — | Golden Plan v2.1: penamaan file kebab-case | ✅ | 2026-11-01 | — | `nama-file.vue`, `use-nama.ts`; tag template tetap PascalCase |
 | S0 | Bootstrap baseline | ✅ | 2026-11-01 | — | import `ormawautsby@0e2ccca`; `test:routes` (33 page, 8 API) & `test:screens` (22 rute × desktop/mobile) baseline; build hijau |
-| S1 | Tooling & kebersihan root | ⬜ | | | |
+| S1 | Tooling & kebersihan root | ✅ | 2026-11-01 | — | ESLint 0 error / 299 warning warisan; typecheck ratchet 26 error warisan di 8 file; script → `scripts/` (+`legacy/`); `docs/database.md`; README; CI `check.yml`; T13 diperbaiki di script |
 | S2 | Fondasi: constants/types/utils/services/store/layout | ⬜ | | | |
 | S3 | Feature data layer | ⬜ | | | |
 | S4 | Pecah pages publik | ⬜ | | | |

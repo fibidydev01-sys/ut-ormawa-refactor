@@ -53,7 +53,9 @@ function pageRoutes() {
   return walk(dir)
     .filter((f) => f.endsWith('.vue'))
     .map((f) => {
-      const rel = relative(dir, f).replace(/\\/g, '/').replace(/\.vue$/, '')
+      const rel = relative(dir, f)
+        .replace(/\\/g, '/')
+        .replace(/\.vue$/, '')
       return '/' + toUrlSegments(rel).join('/')
     })
 }
@@ -63,7 +65,9 @@ function apiRoutes() {
   return walk(dir)
     .filter((f) => /\.(ts|js|mjs)$/.test(f))
     .map((f) => {
-      let rel = relative(dir, f).replace(/\\/g, '/').replace(/\.(ts|js|mjs)$/, '')
+      let rel = relative(dir, f)
+        .replace(/\\/g, '/')
+        .replace(/\.(ts|js|mjs)$/, '')
       let method = 'ALL'
       const m = rel.match(/\.(get|post|put|patch|delete|head|options)$/)
       if (m) {
@@ -100,4 +104,6 @@ if (failed) {
   console.error('\nRoute parity GAGAL — lihat GOLDEN-PLAN.md R2.')
   process.exit(1)
 }
-console.log(`✔ route parity OK: ${current.pages.length} page, ${current.api.length} API identik dengan baseline`)
+console.log(
+  `✔ route parity OK: ${current.pages.length} page, ${current.api.length} API identik dengan baseline`,
+)
