@@ -32,7 +32,7 @@
 
 | ID          | Tingkat | Area               | Temuan                                                                             | Status                       | Rencana         |
 | ----------- | ------- | ------------------ | ---------------------------------------------------------------------------------- | ---------------------------- | --------------- |
-| [T8](#t8)   | 🔴      | Keamanan / API     | API `create-user` & `delete-user` tanpa cek pemanggil                              | ⏳ Q0                        | Hotfix + S7     |
+| [T8](#t8)   | 🔴      | Keamanan / API     | API `create-user` & `delete-user` tanpa cek pemanggil                              | ✅ S7 + hotfix produksi      | Hotfix + S7     |
 | [T28](#t28) | 🔴      | Keamanan / Storage | Siapa pun (tanpa login) bisa upload ke folder `organizations/` & `articles/`       | ⏳ Q6                        | Hotfix rules    |
 | [T14](#t14) | 🟠      | Keamanan / Data    | Password user disimpan & ditampilkan **plaintext**                                 | ⏳ Q5                        | Fase B          |
 | [T13](#t13) | 🟠      | Keamanan / Repo    | Password SUPER_ADMIN pernah ter-commit                                             | ✅ script / ⚠ ganti password | —               |
@@ -43,11 +43,11 @@
 | [T18](#t18) | 🟠      | Fitur / Rules      | Log aktivitas selalu ditolak → panel aktivitas selalu kosong                       | 🔒 ⏳ Q8                     | Fase B          |
 | [T20](#t20) | 🟠      | Fitur / Auth       | Login & daftar sidik jari tidak bisa jalan di domain produksi                      | 🔒                           | Fase B, uji S14 |
 | [T16](#t16) | 🟡      | Performa / Auth    | Buka `/dashboard/*` tanpa login: tunggu 5 detik baru redirect                      | ✅ S6                        | —               |
-| [T24](#t24) | 🟡      | Fitur / Auth       | Akun `SUPER_ADMIN` yang login pakai sidik jari dibawa ke dashboard mahasiswa       | 🔒                           | S7              |
+| [T24](#t24) | 🟡      | Fitur / Auth       | Akun `SUPER_ADMIN` yang login pakai sidik jari dibawa ke dashboard mahasiswa       | ✅                           | S7              |
 | [T25](#t25) | 🟡      | Fitur / Auth       | `kelola-user` & tab Pengguna admin-area hanya untuk role lama `super_admin`        | 🔒                           | Fase B          |
-| [T23](#t23) | 🟡      | Fitur / API        | `delete-user` gagal 500 bila server belum pernah menjalankan `create-user`         | 📅                           | S7              |
+| [T23](#t23) | 🟡      | Fitur / API        | `delete-user` gagal 500 bila server belum pernah menjalankan `create-user`         | ✅                           | S7              |
 | [T17](#t17) | 🟡      | UX                 | Modal Organisasi & Users tidak menutup setelah simpan/hapus                        | 🔒 ⏳                        | Fase B          |
-| [T15](#t15) | 🟡      | Keamanan / Akses   | `/dashboard/mahasiswa` bisa dibuka tanpa login                                     | ⏳                           | S7              |
+| [T15](#t15) | 🟡      | Keamanan / Akses   | `/dashboard/mahasiswa` bisa dibuka tanpa login                                     | ✅                           | S7              |
 | [T29](#t29) | 🟡      | Fitur              | Form UKM, IMF, Aspirasi, Pelaporan, Cari Teman hanya _mock_ — data tidak tersimpan | ⏳ Q9                        | —               |
 | [T6](#t6)   | 🟡      | Auth               | User tanpa dokumen `users` dianggap mahasiswa                                      | 🔒                           | —               |
 | [T4](#t4)   | 🟡      | Struktur           | Dua area admin paralel (lama & baru)                                               | ⏳                           | setelah S14     |
@@ -83,6 +83,13 @@
 - **Rekomendasi:** wajibkan ID token/session cookie + role `SUPER_ADMIN`
   (`server/utils/requireRole.ts`, rencana S7). **Hotfix di repo produksi `ormawautsby`
   sekarang**, tidak menunggu refactor.
+- **Status:** ✅ S7 — `requireSuperAdmin()` (`server/utils/requireRole.ts`) di awal kedua
+  endpoint: menerima `Authorization: Bearer <ID token>` atau cookie `__session`, lalu cek
+  `users/{uid}.role === SUPER_ADMIN`. Tanpa/kredensial palsu → 401, role lain → 403. Client
+  (`users.service.ts`) mengirim ID token. `scripts/create-admin.js` kini memakai Admin SDK
+  langsung untuk membuat SUPER_ADMIN pertama. Dikunci E2E `sesi: /api/create-user &
+/api/delete-user hanya SUPER_ADMIN`. Hotfix setara di repo produksi `ormawautsby`
+  (branch `claude/ut-ormawa-refactor-struktur-nvvlt0`) — menunggu review & merge pemilik.
 
 ### T28
 
@@ -211,6 +218,9 @@
 - **Dampak:** akun skema baru (`SUPER_ADMIN`/`ADMIN` huruf besar) yang login lewat sidik
   jari masuk ke `/dashboard/mahasiswa`. (Saat ini tertutup oleh T20 di produksi.)
 - **Rencana:** satu fungsi penentu tujuan setelah login (pakai `normalizeRole`) di S7.
+- **Status:** ✅ S7 — login passkey kini juga `.toLowerCase()` (sama dengan login password),
+  perubahan terkecil yang menyamakan keduanya. Dikunci E2E `auth: login sidik jari akun
+SUPER_ADMIN → /dashboard (T24)`.
 
 ### T25
 
@@ -233,6 +243,7 @@
   user bisa gagal 500 "Firebase Admin not initialized" sampai ada request lain yang
   menginisialisasi Admin SDK.
 - **Rencana:** pakai `getAdminAuth()` dari `server/utils/firebaseAdmin.ts` (S7, bersama T8).
+- **Status:** ✅ S7 — kedua endpoint memakai `getAdminAuth()/getAdminDb()` (inisialisasi tunggal).
 
 ### T17
 
@@ -253,6 +264,9 @@
   `mahasiswa: halaman dashboard terbuka tanpa login`.
 - **Dampak:** kerangka halaman terlihat orang luar; data tetap aman (hanya dimuat bila login).
 - **Rencana:** gate khusus mahasiswa di S7 (butuh persetujuan).
+- **Status:** ✅ S7 — middleware `login-required` (cukup login, role apa pun); belum login →
+  `/login/mahasiswa`. Middleware `auth` tidak dipakai karena menolak role `mahasiswa`.
+  E2E `mahasiswa: halaman dashboard & edit-profil wajib login (T15)`.
 
 ### T29
 
@@ -329,17 +343,21 @@ Passkey terikat RP ID/domain — selain memperbaiki T20, uji ulang di setiap dom
 
 Centang & tulis jawabannya di sini.
 
-- [ ] **Q0 — T8:** amankan `create-user`/`delete-user` (wajib SUPER_ADMIN)? Hotfix di produksi sekarang?
+- [x] **Q0 — T8:** amankan `create-user`/`delete-user` (wajib SUPER_ADMIN)? Hotfix di produksi sekarang?
+      → **Ya + hotfix produksi.** Selesai di S7; hotfix produksi menunggu merge.
 - [ ] **Q1 — T1/T2/T3/T7:** rapikan setelah refactor (alias URL, sembunyikan menu kosong, matikan `/sandbox`), atau biarkan?
 - [ ] **Q2:** lama sesi login: 7 hari (default) atau 14 hari (maks Firebase)?
-- [ ] **Q3:** `/login/*` saat sudah login: kartu "Buka Dashboard" (rekomendasi) atau redirect otomatis?
-- [ ] **Q4:** gaya cookie banner: bar bawah (rekomendasi) atau modal tengah seperti Fibidy?
+- [x] **Q3:** `/login/*` saat sudah login: kartu "Buka Dashboard" (rekomendasi) atau redirect otomatis?
+      → **Kartu** "Anda sudah masuk — Buka Dashboard" (S8).
+- [x] **Q4:** gaya cookie banner: bar bawah (rekomendasi) atau modal tengah seperti Fibidy?
+      → **Bar bawah** kecil (S8).
 - [ ] **Q5 — T14:** berhenti menyimpan/menampilkan password plaintext?
 - [ ] **Q6 — T26/T27/T28:** perketat rules Firestore & Storage (hotfix)?
 - [ ] **Q7 — T22:** sanitasi HTML artikel?
 - [ ] **Q8 — T18/T19:** desain rules untuk mahasiswa & log aktivitas?
 - [ ] **Q9 — T29:** form mock (UKM, IMF, aspirasi, pelaporan, cari teman) disambungkan ke backend atau diberi label "segera hadir"?
-- [ ] **Q10 — Logout (S7):** cukup hapus cookie di browser ini (sekarang), atau sekalian cabut sesi di **semua perangkat** (`revokeRefreshTokens`)?
+- [x] **Q10 — Logout (S7):** cukup hapus cookie di browser ini (sekarang), atau sekalian cabut sesi di **semua perangkat** (`revokeRefreshTokens`)?
+      → **Hanya perangkat ini** (perilaku sekarang dipertahankan).
 
 ---
 

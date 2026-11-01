@@ -1,8 +1,16 @@
-import { getApps } from 'firebase-admin/app'
-import { getAuth } from 'firebase-admin/auth'
-import { getFirestore } from 'firebase-admin/firestore'
+// ============================================================
+// POST /api/delete-user — hapus akun Auth + dokumen users (SUPER_ADMIN)
+// File: server/api/delete-user.post.ts
+//
+// [S7] T8: wajib SUPER_ADMIN. T23: Admin SDK dari util bersama — dulu
+// gagal 500 bila server belum pernah menjalankan create-user.
+// ============================================================
+
+import { getAdminAuth, getAdminDb } from '~~/server/utils/firebaseAdmin'
+import { requireSuperAdmin } from '~~/server/utils/requireRole'
 
 export default defineEventHandler(async (event) => {
+  await requireSuperAdmin(event)
   const body = await readBody(event)
   const { uid } = body
 
@@ -10,21 +18,20 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'UID is required' })
   }
 
-  if (!getApps().length) {
-    throw createError({ statusCode: 500, statusMessage: 'Firebase Admin not initialized. Check .env' })
-  }
-
   try {
     // 1. Delete user from Firebase Auth
-    await getAuth().deleteUser(uid)
+    await getAdminAuth().deleteUser(uid)
 
     // 2. Delete user document from Firestore
-    const db = getFirestore()
+    const db = getAdminDb()
     await db.collection('users').doc(uid).delete()
 
     return { success: true, message: 'User deleted successfully' }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error deleting user:', error)
-    throw createError({ statusCode: 500, statusMessage: error.message || 'Failed to delete user' })
+    throw createError({
+      statusCode: 500,
+      statusMessage: (error as Error).message || 'Failed to delete user',
+    })
   }
 })

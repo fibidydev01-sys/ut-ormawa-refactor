@@ -18,32 +18,15 @@ import { normalizeRole } from '~/utils/role'
 export default defineNuxtRouteMiddleware(async (to) => {
   const firebaseUser = useState('firebaseUser')
   const userRole = useState('userRole')
-  const isAuthReady = useState('isAuthReady')
 
   // Tunggu hingga auth Firebase siap (max 5 detik agar tidak hang selamanya)
-  if (!isAuthReady.value) {
-    await new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
-        console.warn('[auth middleware] Timeout menunggu Firebase Auth, lanjutkan...')
-        resolve()
-      }, 5000)
-
-      const stop = watch(isAuthReady, (ready) => {
-        if (ready) {
-          stop()
-          clearTimeout(timeout)
-          resolve()
-        }
-      })
-    })
-  }
+  await waitForAuthReady()
 
   const isAuthenticated: boolean = !!firebaseUser.value
   const role: UserRole | null = normalizeRole(userRole.value)
 
   // ── 1. Proteksi semua rute /dashboard ──────────────────────
   if (to.path.startsWith('/dashboard')) {
-
     // Jika belum login → redirect ke halaman login admin
     if (!isAuthenticated) {
       return navigateTo('/login/admin', { replace: true })

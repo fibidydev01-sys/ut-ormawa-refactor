@@ -98,6 +98,58 @@ const AUTH_SCENARIOS = [
   },
 ]
 
+/** Daftar passkey di admin-area lalu login sidik jari, untuk satu varian role. */
+function passkeyScenario(role, name) {
+  return {
+    name,
+    async run({ page, admin, BASE_URL }) {
+      const cdp = await page.context().newCDPSession(page)
+      await cdp.send('WebAuthn.enable')
+      await cdp.send('WebAuthn.addVirtualAuthenticator', {
+        options: {
+          protocol: 'ctap2',
+          transport: 'internal',
+          hasResidentKey: true,
+          hasUserVerification: true,
+          isUserVerified: true,
+          automaticPresenceSimulation: true,
+        },
+      })
+      const uid = await seedUser(admin, {
+        email: `${role.toLowerCase()}@ormawa.test`,
+        role,
+        fullName: 'Legacy',
+      })
+      await loginAdmin(page, BASE_URL, `${role.toLowerCase()}@ormawa.test`)
+      await page.waitForURL('**/dashboard')
+      await spaNavigate(page, '/dashboard/admin-area')
+      await page.getByRole('button', { name: 'Daftarkan Perangkat Ini' }).click()
+      await page.getByText('Hore! Perangkat ini berhasil didaftarkan.').waitFor()
+      const keys = await admin.db.collection(`users/${uid}/passkeys`).get()
+      assert(keys.size === 1, 'passkey tidak tersimpan di users/{uid}/passkeys')
+
+      // admin-area punya header sendiri: logout lewat dropdown profil → '/'
+      await page.locator('button:has(.rounded-full)').first().click()
+      await page.getByRole('button', { name: 'Logout' }).click()
+      await page.waitForURL((u) => !u.pathname.startsWith('/dashboard'))
+      await page.goto(`${BASE_URL}/login/admin`, { waitUntil: 'load' })
+      await page.waitForFunction(() => document.querySelector('#__nuxt')?.__vue_app__)
+      await page.getByRole('button', { name: /Masuk dengan Sidik Jari/ }).click()
+      await page.waitForURL('**/dashboard')
+      await eventually(
+        async () => (await page.locator('aside').innerText()).includes('Users'),
+        'login passkey tidak masuk sebagai super admin',
+      )
+      // [S7] login sidik jari juga membuat sesi server
+      await eventually(
+        async () =>
+          (await (await page.request.get(`${BASE_URL}/api/auth/me`)).json()).user?.uid === uid,
+        'login passkey tidak membuat cookie __session',
+      )
+    },
+  }
+}
+
 const PASSWORDLESS_SCENARIOS = [
   {
     name: 'auth: magic link email → login; dokumen mahasiswa baru ditolak rules (perilaku lama)',
@@ -141,54 +193,12 @@ const PASSWORDLESS_SCENARIOS = [
       )
     },
   },
-  {
-    name: 'auth: daftar passkey di admin-area lalu login sidik jari (authenticator virtual)',
-    async run({ page, admin, BASE_URL }) {
-      const cdp = await page.context().newCDPSession(page)
-      await cdp.send('WebAuthn.enable')
-      await cdp.send('WebAuthn.addVirtualAuthenticator', {
-        options: {
-          protocol: 'ctap2',
-          transport: 'internal',
-          hasResidentKey: true,
-          hasUserVerification: true,
-          isUserVerified: true,
-          automaticPresenceSimulation: true,
-        },
-      })
-      const uid = await seedUser(admin, {
-        email: 'legacy@ormawa.test',
-        role: 'super_admin',
-        fullName: 'Legacy',
-      })
-      await loginAdmin(page, BASE_URL, 'legacy@ormawa.test')
-      await page.waitForURL('**/dashboard')
-      await spaNavigate(page, '/dashboard/admin-area')
-      await page.getByRole('button', { name: 'Daftarkan Perangkat Ini' }).click()
-      await page.getByText('Hore! Perangkat ini berhasil didaftarkan.').waitFor()
-      const keys = await admin.db.collection(`users/${uid}/passkeys`).get()
-      assert(keys.size === 1, 'passkey tidak tersimpan di users/{uid}/passkeys')
-
-      // admin-area punya header sendiri: logout lewat dropdown profil → '/'
-      await page.locator('button:has(.rounded-full)').first().click()
-      await page.getByRole('button', { name: 'Logout' }).click()
-      await page.waitForURL((u) => !u.pathname.startsWith('/dashboard'))
-      await page.goto(`${BASE_URL}/login/admin`, { waitUntil: 'load' })
-      await page.waitForFunction(() => document.querySelector('#__nuxt')?.__vue_app__)
-      await page.getByRole('button', { name: /Masuk dengan Sidik Jari/ }).click()
-      await page.waitForURL('**/dashboard')
-      await eventually(
-        async () => (await page.locator('aside').innerText()).includes('Users'),
-        'login passkey tidak masuk sebagai super admin',
-      )
-      // [S7] login sidik jari juga membuat sesi server
-      await eventually(
-        async () =>
-          (await (await page.request.get(`${BASE_URL}/api/auth/me`)).json()).user?.uid === uid,
-        'login passkey tidak membuat cookie __session',
-      )
-    },
-  },
+  passkeyScenario(
+    'super_admin',
+    'auth: daftar passkey di admin-area lalu login sidik jari (authenticator virtual)',
+  ),
+  // [S7 — T24] akun skema baru (huruf besar) dulu dibawa ke /dashboard/mahasiswa
+  passkeyScenario('SUPER_ADMIN', 'auth: login sidik jari akun SUPER_ADMIN → /dashboard (T24)'),
 ]
 
 const ORGANIZATION_SCENARIOS = [

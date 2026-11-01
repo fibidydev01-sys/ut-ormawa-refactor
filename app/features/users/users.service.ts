@@ -57,13 +57,25 @@ export async function getAllUsers(db: Firestore): Promise<UserDocument[]> {
     })
 }
 
+/**
+ * Header JSON + ID token user yang sedang login. Sejak S7 (T8)
+ * /api/create-user & /api/delete-user hanya menerima SUPER_ADMIN.
+ */
+async function authJsonHeaders(): Promise<Record<string, string>> {
+  const token = await getAuth().currentUser?.getIdToken()
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
 /** Buat akun lewat server (Auth + Firestore) — POST /api/create-user. */
 export async function createUserViaApi(
   payload: Partial<UserDocument> & { password?: string; name?: string },
 ): Promise<void> {
   const response = await fetch('/api/create-user', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authJsonHeaders(),
     body: JSON.stringify({
       email: payload.email,
       password: payload.password,
@@ -83,7 +95,7 @@ export async function createUserViaApi(
 export async function deleteUserViaApi(uid: string): Promise<void> {
   const response = await fetch('/api/delete-user', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authJsonHeaders(),
     body: JSON.stringify({ uid }),
   })
   if (!response.ok) {

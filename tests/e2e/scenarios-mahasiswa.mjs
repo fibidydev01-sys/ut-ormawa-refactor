@@ -51,11 +51,13 @@ export const MAHASISWA_SCENARIOS = [
     },
   },
   {
-    name: 'mahasiswa: halaman dashboard terbuka tanpa login (T15)',
+    // [S7 — T15] dulu terbuka tanpa login; kini dialihkan ke login mahasiswa
+    name: 'mahasiswa: halaman dashboard & edit-profil wajib login (T15)',
     async run({ page, BASE_URL }) {
-      await page.goto(`${BASE_URL}/dashboard/mahasiswa`, { waitUntil: 'load' })
-      assert(page.url().endsWith('/dashboard/mahasiswa'), `dialihkan ke ${page.url()}`)
-      await page.getByText('Belum ada aktivitas.').waitFor()
+      for (const path of ['/dashboard/mahasiswa', '/dashboard/mahasiswa/edit-profil']) {
+        await page.goto(`${BASE_URL}${path}`, { waitUntil: 'load' })
+        await page.waitForURL('**/login/mahasiswa')
+      }
     },
   },
 ]

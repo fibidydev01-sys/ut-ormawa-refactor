@@ -9,7 +9,47 @@ const cookie = async (page, name) => (await page.context().cookies()).find((c) =
 const me = async (page, BASE_URL) =>
   (await (await page.request.get(`${BASE_URL}/api/auth/me`)).json()).user
 
+const post = (page, url, data, headers = {}) => page.request.post(url, { data, headers })
+
 export const SESSION_SCENARIOS = [
+  {
+    // [S7 — T8] dulu siapa pun bisa membuat/menghapus akun lewat API
+    name: 'sesi: /api/create-user & /api/delete-user hanya SUPER_ADMIN (401 / 403)',
+    async run({ page, admin, BASE_URL }) {
+      const targetUid = await seedUser(admin, {
+        email: 'target@ormawa.test',
+        role: 'ADMIN',
+        fullName: 'Target',
+      })
+      const newUser = { email: 'baru@ormawa.test', password: 'rahasia-123', role: 'SUPER_ADMIN' }
+
+      // Tanpa login & token palsu → 401
+      for (const headers of [{}, { authorization: 'Bearer palsu' }]) {
+        const create = await post(page, `${BASE_URL}/api/create-user`, newUser, headers)
+        const remove = await post(page, `${BASE_URL}/api/delete-user`, { uid: targetUid }, headers)
+        assert(
+          create.status() === 401 && remove.status() === 401,
+          `tanpa kredensial: ${create.status()} / ${remove.status()}`,
+        )
+      }
+
+      // Login sebagai ADMIN (cookie __session) → 403
+      await seedUser(admin, { email: 'admin@ormawa.test', role: 'ADMIN', fullName: 'Admin' })
+      await loginAdmin(page, BASE_URL, 'admin@ormawa.test')
+      await eventually(() => cookie(page, '__session'), 'cookie __session tidak dibuat')
+      const create = await post(page, `${BASE_URL}/api/create-user`, newUser)
+      const remove = await post(page, `${BASE_URL}/api/delete-user`, { uid: targetUid })
+      assert(
+        create.status() === 403 && remove.status() === 403,
+        `ADMIN: ${create.status()} / ${remove.status()}`,
+      )
+
+      const created = await admin.auth.getUserByEmail(newUser.email).catch(() => null)
+      assert(!created, 'akun tetap dibuat walau ditolak')
+      assert((await admin.db.doc(`users/${targetUid}`).get()).exists, 'akun target terhapus')
+      assert(await admin.auth.getUser(targetUid), 'akun Auth target terhapus')
+    },
+  },
   {
     name: 'sesi: login password → __session httpOnly; /api/auth/me kenal user; logout menghapus',
     async run({ page, admin, BASE_URL }) {

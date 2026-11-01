@@ -5,7 +5,7 @@ Semua dijalankan **dari root repo**.
 
 | Script | Fungsi | Cara pakai |
 |---|---|---|
-| `create-admin.js` | Membuat akun `SUPER_ADMIN` lewat `POST /api/create-user` di dev server lokal | `ADMIN_EMAIL=… ADMIN_PASSWORD=… node scripts/create-admin.js` (dev server harus jalan) |
+| `create-admin.js` | Membuat akun `SUPER_ADMIN` pertama langsung dengan Firebase Admin SDK (sejak S7 `/api/create-user` wajib login SUPER_ADMIN) | `ADMIN_EMAIL=… ADMIN_PASSWORD=… node scripts/create-admin.js` (butuh `serviceAccountKey.json`) |
 | `seed-organizations.js` | Seed organisasi IM FST/FEB/FHISIP/FKIP ke Firestore | `node scripts/seed-organizations.js` |
 | `add-ormawa-organizations.js` | Tambah organisasi BPH & divisi ke Firestore | `node scripts/add-ormawa-organizations.js` |
 | `fix-deploy.cjs` | Menyiapkan `.output/server` untuk Firebase Functions (Windows: pakai `xcopy`) | dipanggil `deploy.bat` |

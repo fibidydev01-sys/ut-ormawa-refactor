@@ -93,7 +93,9 @@ export function useLoginAdmin() {
       const userRecord = await getUserRecord(requireDb(), result.user.uid)
       let role = 'mahasiswa'
       if (userRecord) {
-        role = (userRecord.data.role || '').trim()
+        role = String(userRecord.data.role || '')
+          .trim()
+          .toLowerCase() // [S7 — T24] sama dengan login password
       }
 
       const userRole = useState('userRole')
