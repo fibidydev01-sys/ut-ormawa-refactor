@@ -30,7 +30,8 @@ export default createConfigForNuxt({
       'vue/multi-word-component-names': 'warn',
       'vue/no-v-html': 'warn',
       'vue/no-unused-vars': 'warn',
-      'vue/no-multiple-template-root': 'warn',
+      // Vue 3 mendukung fragment (multi-root); aturan ini warisan Vue 2.
+      'vue/no-multiple-template-root': 'off',
       '@typescript-eslint/no-empty-object-type': 'warn',
       'preserve-caught-error': 'warn',
       'no-console': 'off',
