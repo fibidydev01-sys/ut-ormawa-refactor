@@ -12,11 +12,11 @@
 
 import { initializeApp, getApps } from 'firebase/app'
 import type { FirebaseApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
+import { getAuth, connectAuthEmulator } from 'firebase/auth'
 import type { Auth } from 'firebase/auth'
-import { getFirestore, doc, getDoc } from 'firebase/firestore'
+import { getFirestore, connectFirestoreEmulator, doc, getDoc } from 'firebase/firestore'
 import type { Firestore } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage'
+import { getStorage, connectStorageEmulator } from 'firebase/storage'
 import type { FirebaseStorage } from 'firebase/storage'
 
 export interface FirebaseClientConfig {
@@ -26,6 +26,11 @@ export interface FirebaseClientConfig {
   storageBucket?: string
   messagingSenderId?: string
   appId?: string
+  /**
+   * Host Firebase Emulator Suite (mis. '127.0.0.1'). Hanya diisi oleh
+   * test layer (tests/e2e.mjs); di produksi kosong → tidak berpengaruh.
+   */
+  emulatorHost?: string
 }
 
 export interface FirebaseClients {
@@ -41,20 +46,33 @@ export interface FirebaseClients {
  * perilaku plugin lama yang berhenti diam-diam.
  */
 export function initFirebase(config: FirebaseClientConfig): FirebaseClients | null {
+  const { emulatorHost, ...firebaseConfig } = config
   let app: FirebaseApp | undefined
-  if (!getApps().length && config.apiKey) {
-    app = initializeApp(config)
+  if (!getApps().length && firebaseConfig.apiKey) {
+    app = initializeApp(firebaseConfig)
   } else if (getApps().length) {
     app = getApps()[0]
   }
   if (!app) return null
 
-  return {
+  const clients = {
     app,
     auth: getAuth(app),
     db: getFirestore(app),
     storage: getStorage(app),
   }
+  if (emulatorHost) connectEmulators(clients, emulatorHost)
+  return clients
+}
+
+const connectedToEmulator = new WeakSet<FirebaseApp>()
+
+function connectEmulators({ app, auth, db, storage }: FirebaseClients, host: string): void {
+  if (connectedToEmulator.has(app)) return
+  connectedToEmulator.add(app)
+  connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true })
+  connectFirestoreEmulator(db, host, 8080)
+  connectStorageEmulator(storage, host, 9199)
 }
 
 export interface UserAccess {

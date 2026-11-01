@@ -41,6 +41,8 @@ export default defineNuxtPlugin((nuxtApp) => {
     storageBucket: config.public.firebaseStorageBucket,
     messagingSenderId: config.public.firebaseMessagingSenderId,
     appId: config.public.firebaseAppId,
+    // Hanya ada di build tes (tests/layer) — lihat services/firebase.ts
+    emulatorHost: (config.public as { firebaseEmulatorHost?: string }).firebaseEmulatorHost,
   })
   if (!firebase) return // Konfigurasi tidak ada
 

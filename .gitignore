@@ -32,3 +32,4 @@ serviceAccountKey.json
 tests/baseline/screens/current/
 test-results
 playwright-report
+tests/e2e/.failures/
