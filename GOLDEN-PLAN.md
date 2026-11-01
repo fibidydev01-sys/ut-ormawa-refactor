@@ -669,6 +669,7 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 - `.gitignore`: `.firebase/`, `.output/`, `.nuxt/`, `.commit_msg.txt`, `.env`.
 - Route manifest baseline → `tests/baseline/routes.json` (`npm run test:routes`).
 - Screenshot baseline rute publik + login (desktop & mobile) → `tests/baseline/screens/` (`npm run test:screens`).
+  Butuh `npm run build:test` (preset node-server) dulu. Tanpa env Firebase, halaman data tampil *empty state* — memang disengaja supaya baseline deterministik.
 - **DoD:** `npm run build` sukses; manifest & screenshot ada.
 
 #### S1 · Tooling & kebersihan root
@@ -751,6 +752,7 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 1. Baca §3 (Golden Rules) + bagian Roadmap sesi yang dikerjakan.
 2. `git pull`, buat branch `refactor/sNN-<nama-singkat>` (atau branch yang ditentukan).
 3. `npm ci && npm run build` — pastikan titik awal hijau.
+   `npm run build:test && npm run test:routes && npm run test:screens` — jaring pengaman harus hijau sebelum mulai.
 
 **Selama sesi**
 4. Kerjakan **hanya** scope sesi itu. Temuan di luar scope → catat di §13, jangan dikerjakan.
@@ -758,9 +760,9 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 
 **Akhiri sesi**
 6. `npm run lint && npm run typecheck && npm run build`.
-7. Route parity: bandingkan daftar rute dengan `routes.baseline.json`.
+7. `npm run test:routes` (R2) dan `npm run build:test && npm run test:screens` (R4).
 8. Smoke test manual: buka `/beranda`, login admin, buka 1 halaman dashboard, logout.
-9. Bandingkan screenshot (fase A–C: harus identik).
+9. Fase A: `test:screens` wajib lulus tanpa `--update`. Baseline hanya boleh di-update bila perubahan tampilan disetujui (Fase B).
 10. Update §14 (centang + tanggal + catatan singkat), push, buka PR dengan ringkasan & checklist DoD.
 
 **Template deskripsi PR**
@@ -798,6 +800,8 @@ Temuan saat audit kode baseline (belum diubah — sesuai R1):
 | T10 | Passkey (WebAuthn) terikat RP ID/domain | Uji ulang di setiap domain (preview & produksi) di S14 |
 | T11 | ISR + konten spesifik user | Diselesaikan dengan `AuthAction` client-side (§6.4) |
 | T12 | Tailwind v4 mengubah beberapa nama kelas | `@tailwindcss/upgrade` + screenshot diff di S9 |
+| T13 | 🟠 `create-admin.js` berisi password SUPER_ADMIN hardcoded (`SuperAdmin123!`) dan sudah ada di riwayat git | S1: ganti jadi baca dari env/argumen. **Ganti password akun itu di produksi bila masih dipakai** |
+| T14 | 🟠 Dashboard (`admin-area/index.vue`, `kelola-user.vue`) menampilkan `user.password` — artinya password tersimpan **plaintext** di dokumen Firestore `users` | Fitur dibekukan (R1) selama Fase A; usulan hapus field & tampilan ini setelah Fase A — butuh persetujuan (Q5) |
 
 Pertanyaan untuk pemilik proyek (jawab di sini):
 - [ ] Q0 — T8: setuju API `create-user`/`delete-user` diamankan (wajib SUPER_ADMIN)? Hotfix di produksi juga?
@@ -805,6 +809,7 @@ Pertanyaan untuk pemilik proyek (jawab di sini):
 - [ ] Q2 — Lama sesi login: 7 hari (default) atau 14 hari (maks Firebase)?
 - [ ] Q3 — `/login/*` saat sudah login: tampilkan kartu "Buka Dashboard" (rekomendasi) atau redirect otomatis?
 - [ ] Q4 — Gaya cookie banner: bar bawah (rekomendasi, tidak menghalangi) atau modal tengah seperti Fibidy?
+- [ ] Q5 — T14: boleh berhenti menyimpan/menampilkan password plaintext (Firebase Auth sudah menyimpannya dengan aman)?
 
 ---
 
@@ -814,7 +819,7 @@ Pertanyaan untuk pemilik proyek (jawab di sini):
 |---|---|---|---|---|---|
 | — | Golden Plan disusun | ✅ | 2026-11-01 | — | audit ormawautsby, kliping-ui, Fibidy-Client |
 | — | Golden Plan v2: struktur final datar | ✅ | 2026-11-01 | — | tanpa route group, fitur datar, Fase A struktur → Fase B perbaikan |
-| S0 | Bootstrap baseline | ⬜ | | | |
+| S0 | Bootstrap baseline | ✅ | 2026-11-01 | — | import `ormawautsby@0e2ccca`; `test:routes` (33 page, 8 API) & `test:screens` (22 rute × desktop/mobile) baseline; build hijau |
 | S1 | Tooling & kebersihan root | ⬜ | | | |
 | S2 | Fondasi: constants/types/utils/services/store/layout | ⬜ | | | |
 | S3 | Feature data layer | ⬜ | | | |
