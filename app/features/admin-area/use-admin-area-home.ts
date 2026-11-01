@@ -9,7 +9,7 @@
 // ============================================================
 
 import type { ActivityLog, LegacyUserRow } from '~/features/users'
-import type { AuthUser, AppError  } from '~/types/database'
+import type { AuthUser, AppError } from '~/types/database'
 import { computed, inject, onMounted, ref } from 'vue'
 import type { InjectionKey } from 'vue'
 import { signOutUser } from '~/services/firebase'

@@ -6,12 +6,9 @@
 // format diserahkan ke Prettier (eslint-config-prettier mematikan
 // aturan gaya yang bentrok).
 //
-// [S1] Kode baseline di app/ & server/ masih banyak pelanggaran
-// "gaya" (any, unused vars, nama komponen satu kata). Aturan itu
-// diturunkan ke `warn` supaya CI tetap hijau tanpa menyentuh app/
-// di sesi ini. Tiap sesi Fase A yang memindah file ke features/
-// wajib membersihkan warning file tsb. Setelah S5, warning ini
-// dinaikkan lagi ke `error` (lihat GOLDEN-PLAN §11).
+// [S1] Aturan gaya sempat diturunkan ke `warn` untuk kode baseline.
+// [S5] app/ sudah bersih → kembali `error`; sisa pelonggaran hanya
+// server/ & plugin analytics (lihat blok ormawa/baseline-relaxed).
 // ============================================================
 
 import { createConfigForNuxt } from '@nuxt/eslint-config/flat'
@@ -23,18 +20,23 @@ export default createConfigForNuxt({
 })
   .append(prettier)
   .append({
+    // [S5] Fase A selesai: app/ kembali ke aturan penuh (error).
+    // Pelonggaran tersisa HANYA untuk file yang belum direfactor:
+    // server/ (dikerjakan bersama session cookie & requireRole di S7)
+    // dan plugin analytics (dikerjakan bersama cookie consent di S8).
     name: 'ormawa/baseline-relaxed',
+    files: ['server/**', 'app/plugins/analytics.client.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': 'warn',
-      'vue/multi-word-component-names': 'warn',
-      'vue/no-v-html': 'warn',
-      'vue/no-unused-vars': 'warn',
-      // Vue 3 mendukung fragment (multi-root); aturan ini warisan Vue 2.
-      'vue/no-multiple-template-root': 'off',
-      '@typescript-eslint/no-empty-object-type': 'warn',
-      'preserve-caught-error': 'warn',
+    },
+  })
+  .append({
+    name: 'ormawa/project',
+    rules: {
       'no-console': 'off',
+      // Vue 3 mendukung fragment (multi-root & <slot> di root); aturan ini warisan Vue 2.
+      'vue/no-multiple-template-root': 'off',
     },
   })
   .append({

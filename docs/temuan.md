@@ -274,7 +274,9 @@ menjadi penjaga akhir, tapi rawan bila rules dilonggarkan.
 
 Dua area admin hidup berdampingan: `admin-area/*` (skema lama: `nama`, `prodi`,
 `password`, role huruf kecil) dan `users`/`organizations`/`Highlight-terkini` (skema baru).
-Penyebab T14, T25. Usulan: satukan setelah S14.
+Penyebab T14, T25. Setelah S5 logika manajemen user skema lama masih ada **dua salinan**
+(`features/admin-area/use-admin-area-home.ts` & `use-admin-area-users.ts`). Usulan: satukan
+setelah S14 bersamaan dengan migrasi ke skema baru.
 
 ### T7
 

@@ -399,6 +399,98 @@ supaya dependensi Firebase & sumber konten terlihat jelas (R8).
 | isi `pages/**` > 80 baris | komponen di `features/<domain>/` + konten di `*.data.ts` |
 | `create-admin.js`, `seed-*.js`, `add-*`, `fix-deploy.*`, `remove-sharp.py`, `deploy.bat` | `scripts/` |
 
+### 4.4 Struktur aktual setelah Fase A (S0–S5)
+
+Dibuat otomatis dari isi repo di akhir S5. Bedanya dengan rancangan §4: domain bertambah
+(`landing`, `profil`, `zona-kampus`, `media`, `kontak`, `dashboard`, `admin-area`,
+`mahasiswa`, `sandbox`) karena tiap halaman lama butuh rumah; logika form/editor yang
+panjang hidup di `use-*.ts` di folder fiturnya.
+
+```
+app/
+├── features/        ← 117 file, 1 folder per domain, isi datar
+│   ├── admin-area/
+│   │   admin-area-activity.vue · admin-area-dashboard-tab.vue · admin-area-header.vue
+│   │   admin-area-home-user-modal.vue · admin-area-home.vue · admin-area-metrics.vue
+│   │   admin-area-modules.vue · admin-area-sidebar.vue · admin-area-users-modal.vue
+│   │   admin-area-users-tab.vue · admin-area-users-table.vue · admin-area-users.vue
+│   │   use-admin-area-home.ts · use-admin-area-users.ts
+│   ├── articles/
+│   │   article-admin-list.vue · article-admin-table.vue · article-catalog.vue
+│   │   article-detail.vue · article-form-content.vue · article-form-media.vue
+│   │   article-form-publish.vue · article-form.vue · article-format.ts · articles.data.ts
+│   │   articles.service.ts · index.ts · use-article-detail.ts · use-article-form.ts
+│   │   use-articles.ts
+│   ├── auth/
+│   │   auth.service.ts · index.ts · login-admin-form.vue · login-admin.vue
+│   │   login-magic-link.vue · login-mahasiswa.vue · use-login-admin.ts
+│   │   use-magic-link-login.ts
+│   ├── dashboard/
+│   │   dashboard-overview.vue
+│   ├── kontak/
+│   │   kontak-aspirasi-contact.vue · kontak-aspirasi-hero.vue · kontak-aspirasi.vue
+│   │   kontak-pelaporan-hero.vue · kontak-pelaporan.vue · kontak-wa-prodi.vue · kontak.data.ts
+│   ├── landing/
+│   │   landing-all-articles.vue · landing-hero.vue · landing-highlights.vue
+│   │   landing-stats.vue · landing-welcome.vue · landing.data.ts
+│   ├── mahasiswa/
+│   │   mahasiswa-dashboard.vue · mahasiswa-footer.vue · mahasiswa-header.vue
+│   │   mahasiswa-profile-form.vue · use-mahasiswa-profile-form.ts
+│   ├── media/
+│   │   media-laporan.vue · media-perlombaan.vue · media-social-links.vue · media.data.ts
+│   ├── organizations/
+│   │   index.ts · organization-delete-modal.vue · organization-form-modal.vue
+│   │   organization-management.vue · organization-table.vue · organizations.service.ts
+│   │   use-organization-form.ts · use-organizations.ts
+│   ├── pengurus/
+│   │   index.ts · pengurus-chart.css · pengurus-chart.vue · pengurus-colors.ts
+│   │   pengurus-editor-bidang.vue · pengurus-editor-bph.vue · pengurus-editor.vue
+│   │   pengurus-member-form-row.ts · pengurus.service.ts · pengurus.types.ts
+│   │   use-pengurus-editor.ts · use-pengurus.ts
+│   ├── profil/
+│   │   profil-tentang-ormawa.css · profil-tentang-ormawa.vue · profil-tentang-ut.css
+│   │   profil-tentang-ut.vue · profil-visi-misi.vue · profil.data.ts
+│   ├── sandbox/
+│   │   sandbox-beranda-tab.vue · sandbox-header.vue · sandbox-kontak-tab.vue
+│   │   sandbox-media-tab.vue · sandbox-preview.vue · sandbox-profil-tab.vue
+│   │   sandbox-sidebar.vue · sandbox-zona-kampus-tab.vue · use-sandbox-preview.ts
+│   ├── users/
+│   │   activity-log.service.ts · index.ts · use-activity-log.ts · use-user-form.ts
+│   │   use-users.ts · user-delete-modal.vue · user-form-modal.vue · user-management.vue
+│   │   user-table.vue · users.service.ts
+│   ├── zona-kampus/
+│   │   zona-kampus-akademik.vue · zona-kampus-cari-teman-board.vue
+│   │   zona-kampus-cari-teman-hero.vue · zona-kampus-cari-teman-profile-modal.vue
+│   │   zona-kampus-cari-teman-profiles.vue · zona-kampus-cari-teman.vue
+│   │   zona-kampus-imf-hero.vue · zona-kampus-imf-info.vue · zona-kampus-imf.vue
+│   │   zona-kampus-non-akademik.vue · zona-kampus-ukm.vue · zona-kampus.data.ts
+├── components/layout/ auth-action · dashboard-sidebar · dashboard-topbar · nav-icon · nav-user
+│                      site-footer · site-header · site-mobile-nav(-group) · site-nav-dropdown
+├── components/shared/ rich-text-editor
+├── composables/      use-firebase.ts · use-site-nav.ts · use-upload.ts
+├── constants/        access-modules.ts · dashboard-menu.ts · icons.ts · nav.ts · site.ts
+├── services/         firebase.ts · storage.ts
+├── stores/           auth.ts
+├── utils/            role.ts
+├── types/            database.ts
+├── layouts/          dashboard.vue · default.vue
+├── middleware/       auth.ts
+├── plugins/          analytics.client.ts · firebase.client.ts
+└── pages/            33 rute, total 572 baris (shell: definePageMeta/SEO + 1 komponen fitur)
+```
+
+Pola yang dipakai (lihat juga catatan S2–S5 di §11):
+
+| Kebutuhan | Pola |
+|---|---|
+| Halaman | `definePageMeta` / SEO + 1 komponen fitur (≤ 61 baris) |
+| Daftar / konten statis | `<fitur>.data.ts` |
+| Akses Firebase | `<fitur>.service.ts` (fungsi murni) → `use-<fitur>.ts` (dipakai komponen) |
+| Form / editor panjang | logika di `use-<x>-form.ts`, template dipecah per kartu (`defineModel` untuk objek form) |
+| Modal CRUD | komponen modal memegang state + submit-nya, dibuka lewat `defineExpose` (`open…()`), hasil lewat emit |
+| Banyak anak memakai state yang sama (editor pengurus, panel admin lama, sandbox) | composable + `provide`/`inject` dengan `InjectionKey` |
+| CSS scoped panjang | `<style scoped src="./x.css">` |
+
 ---
 
 ## 5. Strategi Rendering — SSR / SSG / ISR / SPA
@@ -732,6 +824,14 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 - `admin-area/index` (743), `organizations` (608), `admin-area/struktur-pengurus` (527), `users` (506), `Highlight-terkini/form` (436), `kelola-user`, `mahasiswa/*` → features.
 - `sandbox` (549) dipecah atau dibiarkan (dev only) — catat.
 - **DoD:** tidak ada page > 80 baris / komponen > 250 baris; login 4 metode + passkey register + semua CRUD diuji; screenshot identik.
+- **Catatan hasil S5:**
+  - Dikerjakan bertahap per halaman, **setiap langkah** diverifikasi build + screenshot + E2E terkait, lalu di-commit (9 commit).
+  - Modal Organisasi/Users memegang `isSubmitting`/`closeModal` sendiri sehingga perilaku T17 (modal tak menutup setelah simpan) tetap persis; modal Users tetap memuat ulang data **sebelum** tombol kembali normal.
+  - Header & footer area mahasiswa yang identik di 2 halaman disatukan (`mahasiswa-header`, `mahasiswa-footer`).
+  - Komponen render-function `MemberFormRow` yang dulu inline di halaman → `pengurus-member-form-row.ts`.
+  - `catch (e: any)` → `catch (caught) { const e = caught as AppError }`; `useState<any>('firebaseUser')` → `AuthUser`; komponen tak lagi meng-import `firebase/*` bahkan untuk tipe (`AuthUser`, `Timestamp` di-re-export dari `types/database`).
+  - Aturan lint dikembalikan ke `error` untuk `app/`; pelonggaran tersisa hanya `server/**` (S7) dan `plugins/analytics.client.ts` (S8).
+  - **Belum dikerjakan (sengaja):** logika manajemen user skema lama masih ada dua salinan (`use-admin-area-home.ts` & `use-admin-area-users.ts`, keduanya ≤ 361 baris) — menyatukannya = keputusan T4, bukan sekadar struktur.
 
 ### FASE B — Perbaikan (fitur tetap, kualitas naik)
 
@@ -841,7 +941,7 @@ Yang paling mendesak (perlu hotfix di produksi, tidak menunggu refactor):
 | S2 | Fondasi: constants/types/utils/services/store/layout | ✅ | 2026-11-01 | — | Navbar 551 baris → 7 komponen ≤ 177 baris + `constants/nav.ts`; Sidebar/HeaderProfile/admin layout → `dashboard-*`/`nav-user` + `constants/dashboard-menu.ts`; Pinia `stores/auth.ts`; `services/firebase.ts`; TipTap disamakan 3.32.2 (typecheck 26 → 19); screenshot parity diperluas ke 71 skenario (dashboard + menu) — semua identik |
 | S3 | Feature data layer | ✅ | 2026-11-01 | — | 6 composable lama → `features/{articles,organizations,pengurus,users,auth}` (service + `use-*.ts` + `index.ts`) + `composables/use-{firebase,upload}.ts` + `services/storage.ts`; 0 import `firebase/*` di pages/components/layouts; E2E Firebase Emulator 17 skenario + 71 screenshot identik; typecheck 19 → 17 |
 | S4 | Pecah pages publik | ✅ | 2026-11-01 | — | 19 page publik → shell ≤ 61 baris (total 448 baris, dulu ±4.400); 41 komponen fitur ≤ 250 baris + `*.data.ts` + CSS besar via `<style scoped src>`; screenshot 73/73 identik (+ skenario modal Cari Teman, baseline dari build lama); E2E 17/17; typecheck 17 → 14 |
-| S5 | Pecah pages auth & dashboard | ⬜ | | | |
+| S5 | Pecah pages auth & dashboard | ✅ | 2026-11-01 | — | 13 page auth/dashboard → shell (semua 33 page total 572 baris, dulu ±10.400); komponen ≤ 249 baris; `app/` 0 error lint & 0 error TypeScript (sisa 6 error & 15 warning hanya di `server/` + plugin analytics); screenshot 73/73, E2E 17/17 di setiap langkah |
 | S6 | routeRules + SSR data publik | ⬜ | | | |
 | S7 | Session cookie `__session` | ⬜ | | | |
 | S8 | Tombol Dashboard + Cookie Consent | ⬜ | | | |
