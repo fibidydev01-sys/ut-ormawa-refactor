@@ -35,7 +35,11 @@ export default defineNuxtConfig({
 
   // Auto-import komponen tanpa prefix folder: components/layout/site-header.vue
   // → <SiteHeader />. Nama file komponen harus unik (GOLDEN-PLAN §4.2).
-  components: [{ path: '~/components', pathPrefix: false }],
+  components: [
+    { path: '~/components', pathPrefix: false },
+    // Komponen fitur: features/landing/landing-hero.vue → <LandingHero />
+    { path: '~/features', pathPrefix: false, extensions: ['.vue'] },
+  ],
 
   // Composable fitur (features/<domain>/use-*.ts) ikut di-auto-import seperti
   // composables/. Service (*.service.ts) sengaja TIDAK — import eksplisit (R8).
