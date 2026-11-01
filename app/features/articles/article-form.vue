@@ -13,6 +13,7 @@ import type {
   OrganizationDocument,
   UserDocument,
   OrganizationType,
+  AppError,
 } from '~/types/database'
 import { getUserRecord } from '~/features/users'
 
@@ -148,7 +149,8 @@ onMounted(async () => {
         throw new Error('Artikel tidak ditemukan')
       }
     }
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as AppError
     pageError.value = err.message || 'Gagal memuat form.'
   } finally {
     isLoading.value = false
@@ -232,7 +234,8 @@ async function submitForm() {
     }
 
     router.push('/dashboard/Highlight-terkini')
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as AppError
     pageError.value = err.message || 'Gagal menyimpan artikel.'
   } finally {
     isSubmitting.value = false

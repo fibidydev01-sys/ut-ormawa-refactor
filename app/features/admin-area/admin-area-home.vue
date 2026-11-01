@@ -4,6 +4,7 @@
 -->
 
 <script setup lang="ts">
+import type { AppError } from '~/types/database'
 import { computed, ref, onMounted } from 'vue'
 import { signOutUser } from '~/services/firebase'
 import { registerPasskey as registerPasskeyDevice } from '~/features/auth'
@@ -211,7 +212,8 @@ const registerPasskey = async () => {
   try {
     await registerPasskeyDevice(firebaseUser.value.email, firebaseUser.value.uid)
     passkeyMessage.value = 'Hore! Perangkat ini berhasil didaftarkan.'
-  } catch (error: any) {
+  } catch (caught) {
+    const error = caught as AppError
     console.error('Error registering passkey:', error)
     passkeyError.value = true
     passkeyMessage.value = error.message || 'Gagal mendaftarkan sidik jari.'

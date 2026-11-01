@@ -4,6 +4,7 @@
 -->
 
 <script setup lang="ts">
+import type { AppError } from '~/types/database'
 import { ref, onMounted } from 'vue'
 import type { PengurusMember, BidangItem } from '~/features/pengurus'
 import MemberFormRow from './pengurus-member-form-row'
@@ -38,7 +39,8 @@ onMounted(async () => {
     const data = await getStruktur()
     bph.value = data.bph || []
     bidang.value = data.bidang || []
-  } catch (e: any) {
+  } catch (caught) {
+    const e = caught as AppError
     errorMsg.value = 'Gagal memuat data: ' + (e.message || 'Unknown error')
   } finally {
     isLoading.value = false
@@ -113,7 +115,8 @@ const handlePhotoUpload = async (
     setTimeout(() => {
       successMsg.value = ''
     }, 3000)
-  } catch (e: any) {
+  } catch (caught) {
+    const e = caught as AppError
     errorMsg.value = 'Gagal upload foto: ' + (e.message || 'Unknown error')
   } finally {
     uploadingKey.value = ''
@@ -133,7 +136,8 @@ const handleSave = async () => {
     setTimeout(() => {
       successMsg.value = ''
     }, 4000)
-  } catch (e: any) {
+  } catch (caught) {
+    const e = caught as AppError
     errorMsg.value = 'Gagal menyimpan: ' + (e.message || 'Unknown error')
   } finally {
     isSaving.value = false

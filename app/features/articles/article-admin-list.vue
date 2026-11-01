@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { ArticleDocument } from '~/types/database'
+import type { ArticleDocument, AppError } from '~/types/database'
 import { getUserRecord } from '~/features/users'
 
 const { getAllArticles, getArticlesByOrganization, deleteArticle } = useArticles()
@@ -42,7 +42,8 @@ async function loadArticles() {
         }
       }
     }
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as AppError
     pageError.value = err.message || 'Gagal memuat artikel.'
   } finally {
     isLoading.value = false
@@ -86,7 +87,8 @@ async function deleteArticleHandler(article: ArticleDocument) {
   try {
     await deleteArticle(article.id)
     articles.value = articles.value.filter((item) => item.id !== article.id)
-  } catch (err: any) {
+  } catch (caught) {
+    const err = caught as AppError
     pageError.value = err.message || 'Gagal menghapus artikel.'
   } finally {
     isDeleting.value = false

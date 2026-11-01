@@ -4,6 +4,7 @@
 -->
 
 <script setup lang="ts">
+import type { AppError } from '~/types/database'
 import { signInWithGoogle } from '~/features/auth'
 import { getUserRecord, setUserRecord } from '~/features/users'
 import { ref } from 'vue'
@@ -37,7 +38,8 @@ const loginWithGoogle = async () => {
 
     // Redirect ke dashboard mahasiswa
     navigateTo('/dashboard/mahasiswa')
-  } catch (error: any) {
+  } catch (caught) {
+    const error = caught as AppError
     console.error('Login error:', error)
     errorMessage.value = error.message || 'Terjadi kesalahan saat login.'
   }

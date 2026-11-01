@@ -218,3 +218,13 @@ export type CreateArticlePayload = Omit<
 export type UpdateArticlePayload = Partial<
   Omit<ArticleDocument, 'id' | 'created_at' | 'updated_at'>
 > & { created_at?: Date | Timestamp }
+
+/**
+ * Bentuk error yang dibaca UI dari Firebase / fetch / Error biasa.
+ * Dipakai untuk `catch (caught) { const error = caught as AppError }`.
+ */
+export interface AppError {
+  code?: string
+  message?: string
+  name?: string
+}
