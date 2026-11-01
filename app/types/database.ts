@@ -12,6 +12,9 @@
 
 import type { Timestamp } from 'firebase/firestore'
 
+/** Re-export supaya page/komponen tidak meng-import firebase/* langsung (R8). */
+export type { Timestamp }
+
 // ────────────────────────────────────────────────────────────
 // ENUM / LITERAL TYPES
 // ────────────────────────────────────────────────────────────
@@ -53,10 +56,7 @@ export type AdminModule =
  * - ORGANISASI_LAIN          : Organisasi lainnya di luar kategori di atas.
  */
 export type OrganizationType =
-  | 'HIMPUNAN_MAHASISWA'
-  | 'UNIT_KEGIATAN_MAHASISWA'
-  | 'ORMAWA'
-  | 'ORGANISASI_LAIN'
+  'HIMPUNAN_MAHASISWA' | 'UNIT_KEGIATAN_MAHASISWA' | 'ORMAWA' | 'ORGANISASI_LAIN'
 
 /**
  * Status publikasi artikel.
@@ -101,7 +101,7 @@ export interface UserDocument {
 
   /**
    * Daftar modul yang boleh diakses pengguna.
-   * SUPER_ADMIN memiliki akses penuh secara default, 
+   * SUPER_ADMIN memiliki akses penuh secara default,
    * fitur ini lebih diperuntukkan untuk membatasi akses role ADMIN.
    */
   access_modules?: AdminModule[]

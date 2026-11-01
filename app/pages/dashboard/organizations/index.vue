@@ -400,8 +400,8 @@ definePageMeta({
 useHead({ title: 'Organisasi — Admin Panel Ormawa' })
 
 // ── Composable ───────────────────────────────────────────────
-const { getAllOrganizations, createOrganization, updateOrganization } = useOrganizations()
-const { uploadImage, isUploading } = useStorage()
+const { getAllOrganizations, createOrganization, updateOrganization, deleteOrganization } = useOrganizations()
+const { uploadImage, isUploading } = useUpload()
 
 // ── Page State ───────────────────────────────────────────────
 const organizations = ref<OrganizationDocument[]>([])
@@ -586,11 +586,7 @@ async function executeDelete(): Promise<void> {
   isDeleting.value = true
 
   try {
-    const { $db } = useNuxtApp()
-    if (!$db) throw new Error('Firestore belum siap.')
-
-    const { doc, deleteDoc } = await import('firebase/firestore')
-    await deleteDoc(doc($db, 'organizations', organizationToDelete.value.id))
+    await deleteOrganization(organizationToDelete.value.id)
 
     // Hapus dari state lokal
     organizations.value = organizations.value.filter(

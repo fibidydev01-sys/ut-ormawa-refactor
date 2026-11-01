@@ -441,7 +441,18 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
-import { startRegistration } from '@simplewebauthn/browser'
+import { signOutUser } from '~/services/firebase'
+import { registerPasskey as registerPasskeyDevice } from '~/features/auth'
+import {
+  createAccountWithSecondaryApp,
+  deleteUserRecord,
+  getUserRecord,
+  listActivityLogs,
+  listUserRecords,
+  setUserRecord,
+  toLegacyUserRow,
+  updateUserRecord,
+} from '~/features/users'
 
 
 // Disable default layout — halaman ini self-contained seperti sandbox
@@ -465,25 +476,9 @@ const newUser = ref({ name: '', email: '', password: '', role: '' })
 
 const fetchUsers = async () => {
   try {
-    const { $db } = useNuxtApp()
-    if (!$db) return
-    const { collection, getDocs } = await import('firebase/firestore')
-    const usersSnap = await getDocs(collection($db, 'users'))
-    users.value = usersSnap.docs.map(doc => {
-      const data = doc.data()
-      let organisasi = data.prodi || 'Pusat (BPH)'
-      if (data.role === 'mahasiswa' && data.prodi) organisasi = data.prodi
-      else if (data.role === 'mahasiswa' && !data.prodi) organisasi = 'Mahasiswa'
-      return {
-        id: doc.id,
-        name: data.nama || 'Tanpa Nama',
-        email: data.email || '-',
-        role: data.role ? (data.role.charAt(0).toUpperCase() + data.role.slice(1)) : 'Mahasiswa',
-        organisasi,
-        password: data.password || 'Login via Google',
-        showPassword: false
-      }
-    })
+    const { db } = useFirebase()
+    if (!db) return
+    users.value = (await listUserRecords(db)).map(toLegacyUserRow)
   } catch (error) { console.error('Error fetching users:', error) }
 }
 
@@ -500,11 +495,10 @@ const createUser = async () => {
   if (newUser.value.role === 'admin') organisasi = 'Pusat (BPH)'
   else if (newUser.value.role === 'mahasiswa') organisasi = 'Mahasiswa'
   try {
-    const { $db } = useNuxtApp()
-    if ($db) {
-      const { doc, setDoc, updateDoc } = await import('firebase/firestore')
+    const { db } = useFirebase()
+    if (db) {
       if (isEditMode.value && editingUserId.value) {
-        await updateDoc(doc($db, 'users', editingUserId.value), {
+        await updateUserRecord(db, editingUserId.value, {
           nama: newUser.value.name, email: newUser.value.email,
           password: newUser.value.password, role: newUser.value.role,
           prodi: organisasi, updatedAt: new Date().toISOString()
@@ -518,14 +512,8 @@ const createUser = async () => {
           projectId: config.firebaseProjectId, storageBucket: config.firebaseStorageBucket,
           messagingSenderId: config.firebaseMessagingSenderId, appId: config.firebaseAppId
         }
-        const { initializeApp } = await import('firebase/app')
-        const { getAuth, createUserWithEmailAndPassword } = await import('firebase/auth')
-        const secondaryApp = initializeApp(firebaseConfig, `SecondaryApp_${Date.now()}`)
-        const secondaryAuth = getAuth(secondaryApp)
-        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, newUser.value.email, newUser.value.password)
-        const newId = userCredential.user.uid
-        await secondaryAuth.signOut()
-        await setDoc(doc($db, 'users', newId), {
+        const newId = await createAccountWithSecondaryApp(firebaseConfig, newUser.value.email, newUser.value.password)
+        await setUserRecord(db, newId, {
           nama: newUser.value.name, email: newUser.value.email,
           password: newUser.value.password, role: newUser.value.role,
           prodi: organisasi, createdAt: new Date().toISOString()
@@ -557,10 +545,9 @@ const closeModal = () => {
 const deleteUser = async (user: any) => {
   if (confirm(`Apakah Anda yakin ingin menghapus akun ${user.name}?`)) {
     try {
-      const { $db } = useNuxtApp()
-      if ($db) {
-        const { doc, deleteDoc } = await import('firebase/firestore')
-        await deleteDoc(doc($db, 'users', user.id))
+      const { db } = useFirebase()
+      if (db) {
+        await deleteUserRecord(db, user.id)
         users.value = users.value.filter(u => u.id !== user.id)
         await logActivity(firebaseUser.value?.displayName || 'Admin', firebaseUser.value?.uid || '', 'menghapus pengguna', user.name)
         alert('Pengguna berhasil dihapus.')
@@ -612,35 +599,8 @@ const registerPasskey = async () => {
   passkeyMessage.value = ''
   passkeyError.value = false
   try {
-    const response = await fetch('/api/webauthn/generate-registration', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: firebaseUser.value.email, uid: firebaseUser.value.uid })
-    })
-    if (!response.ok) throw new Error('Gagal mendapatkan konfigurasi sidik jari dari server.')
-    const options = await response.json()
-    let attResp;
-    try {
-      attResp = await startRegistration(options)
-    } catch (error: any) {
-      if (error.name === 'NotAllowedError') throw new Error('Proses dibatalkan atau sensor sidik jari belum diatur.')
-      throw error
-    }
-    const verificationResp = await fetch('/api/webauthn/verify-registration', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uid: firebaseUser.value.uid, registrationResponse: attResp })
-    })
-    if (!verificationResp.ok) {
-      const err = await verificationResp.json()
-      throw new Error(err.message || 'Verifikasi server gagal.')
-    }
-    const verification = await verificationResp.json()
-    if (verification.verified) {
-      passkeyMessage.value = 'Hore! Perangkat ini berhasil didaftarkan.'
-    } else {
-      throw new Error('Server menolak pendaftaran.')
-    }
+    await registerPasskeyDevice(firebaseUser.value.email, firebaseUser.value.uid)
+    passkeyMessage.value = 'Hore! Perangkat ini berhasil didaftarkan.'
   } catch (error: any) {
     console.error('Error registering passkey:', error)
     passkeyError.value = true
@@ -660,13 +620,11 @@ let saveTimeout: any = null
 
 const fetchNote = async () => {
   try {
-    const { $db } = useNuxtApp()
-    if (!$db || !firebaseUser.value?.uid) return
-    const { doc, getDoc } = await import('firebase/firestore')
-    const docRef = doc($db, 'users', firebaseUser.value.uid)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists() && docSnap.data().personalNote) {
-      adminNote.value = docSnap.data().personalNote
+    const { db } = useFirebase()
+    if (!db || !firebaseUser.value?.uid) return
+    const userRecord = await getUserRecord(db, firebaseUser.value.uid)
+    if (userRecord && userRecord.data.personalNote) {
+      adminNote.value = userRecord.data.personalNote
     }
   } catch (e) { console.error('Error fetching note', e) }
 }
@@ -676,10 +634,7 @@ const saveNoteToDb = async () => {
   isSavingNote.value = true
   noteSaved.value = false
   try {
-    const { $db } = useNuxtApp()
-    const { doc, setDoc } = await import('firebase/firestore')
-    const docRef = doc($db, 'users', firebaseUser.value.uid)
-    await setDoc(docRef, { personalNote: adminNote.value }, { merge: true })
+    await setUserRecord(useFirebase().requireDb(), firebaseUser.value.uid, { personalNote: adminNote.value }, { merge: true })
     noteSaved.value = true
     setTimeout(() => { noteSaved.value = false }, 2000)
   } catch (e) { console.error('Error saving note', e) }
@@ -705,13 +660,9 @@ const formatTime = (isoString: string) => {
 
 const fetchLogs = async () => {
   try {
-    const { $db } = useNuxtApp()
-    if (!$db) return
-    const { collection, getDocs } = await import('firebase/firestore')
-    const snap = await getDocs(collection($db, 'activityLogs'))
-    const allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() as any }))
-    allLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    globalLogs.value = allLogs.slice(0, 5)
+    const { db } = useFirebase()
+    if (!db) return
+    globalLogs.value = (await listActivityLogs(db)).slice(0, 5)
   } catch (error) { console.error('Failed to fetch global logs', error) }
 }
 
@@ -726,11 +677,7 @@ onMounted(() => {
 // ==========================================
 const logout = async () => {
   try {
-    const { $auth } = useNuxtApp()
-    if ($auth) {
-      const { signOut } = await import('firebase/auth')
-      await signOut($auth)
-    }
+    await signOutUser(useFirebase().auth)
     navigateTo('/')
   } catch (error) { console.error('Logout error:', error) }
 }

@@ -124,6 +124,14 @@
 </template>
 
 <script setup lang="ts">
+import {
+  createAccountWithSecondaryApp,
+  deleteUserRecord,
+  listUserRecords,
+  setUserRecord,
+  toLegacyUserRow,
+  updateUserRecord,
+} from '~/features/users'
 import { ref, onMounted } from 'vue'
 
 definePageMeta({
@@ -149,9 +157,8 @@ onMounted(async () => {
   }
 
   try {
-    const { $db } = useNuxtApp()
-    if (!$db) return
-    const { collection, getDocs } = await import('firebase/firestore')
+    const { db } = useFirebase()
+    if (!db) return
     fetchUsers()
   } catch (error) {
     console.error('Error in onMounted:', error)
@@ -160,29 +167,9 @@ onMounted(async () => {
 
 const fetchUsers = async () => {
   try {
-    const { $db } = useNuxtApp()
-    if (!$db) return
-    const { collection, getDocs } = await import('firebase/firestore')
-    const usersSnap = await getDocs(collection($db, 'users'))
-    
-    users.value = usersSnap.docs.map(doc => {
-      const data = doc.data()
-      let organisasi = data.prodi || 'Pusat (BPH)'
-      if (data.role === 'mahasiswa' && data.prodi) {
-        organisasi = data.prodi
-      } else if (data.role === 'mahasiswa' && !data.prodi) {
-        organisasi = 'Mahasiswa'
-      }
-      return {
-        id: doc.id,
-        name: data.nama || 'Tanpa Nama',
-        email: data.email || '-',
-        role: data.role ? (data.role.charAt(0).toUpperCase() + data.role.slice(1)) : 'Mahasiswa',
-        organisasi: organisasi,
-        password: data.password || 'Login via Google',
-        showPassword: false
-      }
-    })
+    const { db } = useFirebase()
+    if (!db) return
+    users.value = (await listUserRecords(db)).map(toLegacyUserRow)
   } catch (error) {
     console.error('Error fetching users:', error)
   }
@@ -216,12 +203,10 @@ const createUser = async () => {
   }
 
   try {
-    const { $db } = useNuxtApp()
-    if ($db) {
-      const { doc, setDoc, updateDoc } = await import('firebase/firestore')
-      
+    const { db } = useFirebase()
+    if (db) {
       if (isEditMode.value && editingUserId.value) {
-        await updateDoc(doc($db, 'users', editingUserId.value), {
+        await updateUserRecord(db, editingUserId.value, {
           nama: newUser.value.name,
           email: newUser.value.email,
           password: newUser.value.password,
@@ -245,19 +230,10 @@ const createUser = async () => {
           appId: config.firebaseAppId
         }
         
-        const { initializeApp } = await import('firebase/app')
-        const { getAuth, createUserWithEmailAndPassword } = await import('firebase/auth')
-        
-        const secondaryApp = initializeApp(firebaseConfig, `SecondaryApp_${Date.now()}`)
-        const secondaryAuth = getAuth(secondaryApp)
-        
-        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, newUser.value.email, newUser.value.password)
-        const newId = userCredential.user.uid
-        
-        await secondaryAuth.signOut()
+        const newId = await createAccountWithSecondaryApp(firebaseConfig, newUser.value.email, newUser.value.password)
 
         // Create Firestore document
-        await setDoc(doc($db, 'users', newId), {
+        await setUserRecord(db, newId, {
           nama: newUser.value.name,
           email: newUser.value.email,
           password: newUser.value.password, // For demo purposes
@@ -309,10 +285,9 @@ const closeModal = () => {
 const deleteUser = async (user: any) => {
   if (confirm(`Apakah Anda yakin ingin menghapus akun ${user.name}?`)) {
     try {
-      const { $db } = useNuxtApp()
-      if ($db) {
-        const { doc, deleteDoc } = await import('firebase/firestore')
-        await deleteDoc(doc($db, 'users', user.id))
+      const { db } = useFirebase()
+      if (db) {
+        await deleteUserRecord(db, user.id)
         users.value = users.value.filter(u => u.id !== user.id)
         
         await logActivity(firebaseUser.value?.displayName || 'Admin', firebaseUser.value?.uid || '', 'menghapus pengguna', user.name)

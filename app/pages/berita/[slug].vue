@@ -104,8 +104,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import type { ArticleDocument } from '~/types/database'
-import type { Timestamp } from 'firebase/firestore'
+import type { ArticleDocument, Timestamp } from '~/types/database'
 
 const route = useRoute()
 const config = useRuntimeConfig()

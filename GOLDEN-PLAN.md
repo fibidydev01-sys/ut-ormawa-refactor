@@ -706,6 +706,13 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 - Bentuk `features/*`; pindah & pecah composables jadi `use-x.ts` + `x.service.ts` (§4.3).
 - Semua akses Firestore dari pages dashboard (`getDocs` di admin-area, mahasiswa) pindah ke service.
 - **DoD:** `grep "firebase/" app/pages app/components` = 0; semua CRUD dashboard di-smoke-test.
+- **Catatan hasil S3:**
+  - **E2E di Firebase Emulator Suite** (`npm run build:test && npm run test:e2e`, butuh Java 11+). 17 skenario menjalankan UI asli terhadap Auth/Firestore/Storage Emulator dengan `firestore.rules` & `storage.rules` asli: login password / salah password / tanpa dokumen / ADMIN terbatas / **magic link** (oobCode emulator) / **passkey** (authenticator virtual Chromium), CRUD organisasi + upload logo, CRUD artikel + upload cover + halaman publik (termasuk SSR `/berita` via server API), pembatasan organisasi ADMIN, users via `/api/create-user` & `/api/delete-user`, editor struktur pengurus + halaman publiknya, admin-area & kelola-user lama, profil mahasiswa. Semua lolos di kode **sebelum** S3, lalu tetap lolos sesudahnya.
+  - Emulator hanya aktif bila `runtimeConfig.public.firebaseEmulatorHost` diisi — key itu hanya dideklarasikan `tests/layer`, jadi build produksi tidak terpengaruh.
+  - Server E2E berjalan di `http://localhost:3000` karena WebAuthn di server di-hardcode ke origin itu (T20).
+  - Halaman masih memegang orkestrasi (urutan panggilan, pesan error) — sengaja, supaya diff S3 hanya "pindah akses data". Memecah halaman jadi komponen fitur = S4/S5.
+  - Pemanggilan Firebase di service kini import statis (dulu `await import()` di tiap fungsi — tidak memecah bundle karena plugin sudah meng-import SDK yang sama).
+  - Fungsi yang tidak dipakai (`getUkmArticles`, `updateArticleStatus`, `getOrganizationById` lama) dipertahankan; pembersihan kode mati bukan bagian Fase A.
 
 #### S4 · Pecah pages publik
 - `beranda` → `features/landing/*Section.vue`; profil, zona-kampus, media, kontak → komponen + `*.data.ts`; `berita/[slug]` & `media/artikel` → `features/articles`; struktur pengurus → `features/pengurus`.
@@ -817,6 +824,10 @@ Temuan saat audit kode baseline (belum diubah — sesuai R1):
 | T11 | ISR + konten spesifik user | Diselesaikan dengan `AuthAction` client-side (§6.4) |
 | T15 | `/dashboard/mahasiswa` & `/edit-profil` tidak memakai middleware `auth` — halaman terbuka untuk siapa pun; data hanya dimuat bila sudah login (Firestore rules tetap menjaga data) | Dibiarkan (R1). Usulan: pasang gate khusus mahasiswa di S7 — butuh persetujuan |
 | T16 | SSR `/dashboard/**` tanpa login **menunggu 5 detik** (timeout middleware menunggu `isAuthReady` yang hanya diisi di client) baru redirect 302 ke `/login/admin` — terukur 5,1 s vs 0,05 s untuk `/beranda` | Diselesaikan oleh session cookie di S7 (server langsung tahu status login) |
+| T17 | Modal tambah/edit di **Organisasi** dan **Users** tidak menutup setelah simpan; modal hapus juga tidak menutup. `closeModal()`/`cancelDelete()` dipanggil saat `isSubmitting`/`isDeleting` masih `true`, sehingga langsung `return`. Data tetap tersimpan | Dikunci E2E (R1). Perbaikan 1 baris per handler di Fase B — butuh persetujuan |
+| T18 | `firestore.rules` **tidak punya aturan untuk `activityLogs`** → semua `logActivity()` ditolak diam-diam, panel "Aktivitas" admin-area & mahasiswa selalu kosong | Dikunci E2E. Usulan: tambah rule (tulis: user login untuk dirinya sendiri; baca: SUPER_ADMIN / pemilik) — butuh persetujuan |
+| T19 | Rules `users` hanya mengizinkan buat dokumen sendiri dengan `role == 'ADMIN'` & update hanya `full_name` → **simpan profil mahasiswa selalu gagal** dan login **magic link**/**Google** pertama kali gagal membuat dokumen mahasiswa (user tetap ter-login di Auth, tapi muncul pesan error) | Dikunci E2E. Perlu keputusan desain rules mahasiswa |
+| T20 | WebAuthn server di-hardcode `rpID: 'localhost'`, origin `http://localhost:3000` → **login & daftar sidik jari tidak bisa jalan di domain produksi** | Fase B: ambil dari `runtimeConfig` (`siteUrl`). Uji ulang di S14 |
 | T12 | Tailwind v4 mengubah beberapa nama kelas | `@tailwindcss/upgrade` + screenshot diff di S9 |
 | T13 | 🟠 `create-admin.js` berisi password SUPER_ADMIN hardcoded (`SuperAdmin123!`) dan sudah ada di riwayat git | ✅ S1: `scripts/create-admin.js` kini baca `ADMIN_EMAIL`/`ADMIN_PASSWORD` dari env. ⚠ Password lama tetap ada di riwayat git `ormawautsby` & repo ini → **ganti password akun itu di produksi bila masih dipakai** |
 | T14 | 🟠 Dashboard (`admin-area/index.vue`, `kelola-user.vue`) menampilkan `user.password` — artinya password tersimpan **plaintext** di dokumen Firestore `users` | Fitur dibekukan (R1) selama Fase A; usulan hapus field & tampilan ini setelah Fase A — butuh persetujuan (Q5) |
@@ -841,7 +852,7 @@ Pertanyaan untuk pemilik proyek (jawab di sini):
 | S0 | Bootstrap baseline | ✅ | 2026-11-01 | — | import `ormawautsby@0e2ccca`; `test:routes` (33 page, 8 API) & `test:screens` (22 rute × desktop/mobile) baseline; build hijau |
 | S1 | Tooling & kebersihan root | ✅ | 2026-11-01 | — | ESLint 0 error / 299 warning warisan; typecheck ratchet 26 error warisan di 8 file; script → `scripts/` (+`legacy/`); `docs/database.md`; README; CI `check.yml`; T13 diperbaiki di script |
 | S2 | Fondasi: constants/types/utils/services/store/layout | ✅ | 2026-11-01 | — | Navbar 551 baris → 7 komponen ≤ 177 baris + `constants/nav.ts`; Sidebar/HeaderProfile/admin layout → `dashboard-*`/`nav-user` + `constants/dashboard-menu.ts`; Pinia `stores/auth.ts`; `services/firebase.ts`; TipTap disamakan 3.32.2 (typecheck 26 → 19); screenshot parity diperluas ke 71 skenario (dashboard + menu) — semua identik |
-| S3 | Feature data layer | ⬜ | | | |
+| S3 | Feature data layer | ✅ | 2026-11-01 | — | 6 composable lama → `features/{articles,organizations,pengurus,users,auth}` (service + `use-*.ts` + `index.ts`) + `composables/use-{firebase,upload}.ts` + `services/storage.ts`; 0 import `firebase/*` di pages/components/layouts; E2E Firebase Emulator 17 skenario + 71 screenshot identik; typecheck 19 → 17 |
 | S4 | Pecah pages publik | ⬜ | | | |
 | S5 | Pecah pages auth & dashboard | ⬜ | | | |
 | S6 | routeRules + SSR data publik | ⬜ | | | |

@@ -203,16 +203,17 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { ArticleStatus, CreateArticlePayload, UpdateArticlePayload, OrganizationDocument, ArticleDocument, UserDocument, OrganizationType } from '~/types/database'
+import type { ArticleStatus, CreateArticlePayload, UpdateArticlePayload, OrganizationDocument, UserDocument, OrganizationType } from '~/types/database'
+import { getUserRecord } from '~/features/users'
 
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 useHead({ title: 'Form Artikel — Admin Panel Ormawa' })
 
 const route = useRoute()
 const router = useRouter()
-const { createArticle, updateArticle } = useArticles()
-const { getAllOrganizations } = useOrganizations()
-const { uploadImage, isUploading } = useStorage()
+const { createArticle, updateArticle, getArticleDocument } = useArticles()
+const { getAllOrganizations, getOrganizationById } = useOrganizations()
+const { uploadImage, isUploading } = useUpload()
 
 const articleId = computed(() => route.query.id as string | undefined)
 const isEdit = computed(() => !!articleId.value)
@@ -292,17 +293,15 @@ onMounted(async () => {
   isLoading.value = true
   pageError.value = ''
   try {
-    const { $db } = useNuxtApp()
-    if (!$db) throw new Error('Firestore tidak tersedia')
-    const { doc, getDoc } = await import('firebase/firestore')
+    const db = useFirebase().requireDb('Firestore tidak tersedia')
 
     const resolvedUser = firebaseUser.value
     if (resolvedUser?.uid) {
-      const userSnap = await getDoc(doc($db, 'users', resolvedUser.uid))
-      if (userSnap.exists()) {
-        const userData = userSnap.data() as Partial<UserDocument>
+      const userRecord = await getUserRecord(db, resolvedUser.uid)
+      if (userRecord) {
+        const userData = userRecord.data as Partial<UserDocument>
         currentUser.value = {
-          id: userSnap.id,
+          id: userRecord.id,
           email: typeof userData.email === 'string' ? userData.email : '',
           full_name: typeof userData.full_name === 'string' ? userData.full_name : '',
           role: (typeof userData.role === 'string' ? userData.role : 'ADMIN') as UserDocument['role'],
@@ -322,9 +321,8 @@ onMounted(async () => {
     }
 
     if (isEdit.value && articleId.value) {
-      const articleSnap = await getDoc(doc($db, 'articles', articleId.value))
-      if (articleSnap.exists()) {
-        const data = articleSnap.data() as ArticleDocument
+      const data = await getArticleDocument(articleId.value)
+      if (data) {
         form.title = data.title || ''
         form.slug = data.slug || ''
         form.content = data.content || ''
@@ -383,11 +381,8 @@ async function submitForm() {
     }
 
     if (organizationId) {
-      const { $db } = useNuxtApp()
-      const { doc, getDoc } = await import('firebase/firestore')
-      const organizationSnap = await getDoc(doc($db, 'organizations', organizationId))
-      if (organizationSnap.exists()) {
-        const organizationData = organizationSnap.data() as OrganizationDocument
+      const organizationData = await getOrganizationById(organizationId)
+      if (organizationData) {
         organizationName = organizationData.name
         organizationType = organizationData.organization_type
       }

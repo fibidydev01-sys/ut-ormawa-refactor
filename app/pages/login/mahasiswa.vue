@@ -54,6 +54,8 @@
 </template>
 
 <script setup lang="ts">
+import { signInWithGoogle } from '~/features/auth'
+import { getUserRecord, setUserRecord } from '~/features/users'
 import { ref } from 'vue'
 
 useHead({
@@ -67,26 +69,21 @@ const errorMessage = ref('')
 const loginWithGoogle = async () => {
   errorMessage.value = ''
   try {
-    const { $auth, $db } = useNuxtApp()
-    // Import dynamically so it's client-side only
-    const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth')
-    const { doc, getDoc, setDoc } = await import('firebase/firestore')
-    
-    if (!$auth) {
+    const { auth, db } = useFirebase()
+
+    if (!auth) {
       errorMessage.value = 'Firebase tidak dikonfigurasi. Periksa .env Anda.'
       return
     }
 
-    const provider = new GoogleAuthProvider()
-    const result = await signInWithPopup($auth, provider)
-    
+    const result = await signInWithGoogle(auth)
+
     // Check if user document exists in Firestore
-    const userDocRef = doc($db, 'users', result.user.uid)
-    const userDocSnap = await getDoc(userDocRef)
-    
-    if (!userDocSnap.exists()) {
+    const userRecord = await getUserRecord(db!, result.user.uid)
+
+    if (!userRecord) {
       // First time login, create basic Mahasiswa profile
-      await setDoc(userDocRef, {
+      await setUserRecord(db!, result.user.uid, {
         uid: result.user.uid,
         email: result.user.email,
         nama: result.user.displayName || '',

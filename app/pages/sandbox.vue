@@ -500,6 +500,7 @@
 </template>
 
 <script setup lang="ts">
+import { signOutUser } from '~/services/firebase'
 import { ref } from 'vue'
 
 const profileOpen = ref(false)
@@ -514,10 +515,7 @@ const activeSubTab = ref<Record<string, string>>({
 })
 
 const logout = async () => {
-  const { $auth } = useNuxtApp()
-  if ($auth) {
-    const { signOut } = await import('firebase/auth')
-    await signOut($auth)
+  if (await signOutUser(useFirebase().auth)) {
     navigateTo('/login/admin')
   }
 }

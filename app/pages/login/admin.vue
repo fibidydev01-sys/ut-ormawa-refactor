@@ -210,7 +210,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { startAuthentication } from '@simplewebauthn/browser'
+import {
+  completeEmailLinkSignIn,
+  isEmailSignInLink,
+  sendEmailSignInLink,
+  signInWithPasskey,
+  signInWithPassword,
+} from '~/features/auth'
+import { getUserRecord, setUserRecord } from '~/features/users'
 
 useHead({
   title: 'Login Portal',
@@ -239,15 +246,12 @@ const isVerifying = ref(false)
 
 // Lifecycle
 onMounted(async () => {
-  const { $auth, $db } = useNuxtApp()
-  if (!$auth) return
+  const { auth, requireDb } = useFirebase()
+  if (!auth) return
 
   try {
-    const { isSignInWithEmailLink, signInWithEmailLink } = await import('firebase/auth')
-    const { doc, getDoc, setDoc } = await import('firebase/firestore')
-
     // Mengecek apakah ada parameter persetujuan magic link dari inbox
-    if (isSignInWithEmailLink($auth, window.location.href)) {
+    if (isEmailSignInLink(auth, window.location.href)) {
       isVerifying.value = true
       
       // Ambil email dari cache browser
@@ -265,15 +269,15 @@ onMounted(async () => {
 
       if (savedEmail) {
         try {
-          const result = await signInWithEmailLink($auth, savedEmail, window.location.href)
+          const result = await completeEmailLinkSignIn(auth, savedEmail, window.location.href)
           window.localStorage.removeItem('emailForSignIn')
 
           // Periksa dokumen firestore
-          const userDocRef = doc($db, 'users', result.user.uid)
-          const userDocSnap = await getDoc(userDocRef)
-          
-          if (!userDocSnap.exists()) {
-            await setDoc(userDocRef, {
+          const db = requireDb()
+          const userRecord = await getUserRecord(db, result.user.uid)
+
+          if (!userRecord) {
+            await setUserRecord(db, result.user.uid, {
               uid: result.user.uid,
               email: result.user.email,
               nama: result.user.email?.split('@')[0] || 'Mahasiswa',
@@ -302,24 +306,21 @@ const loginAdmin = async () => {
   errorMessage.value = ''
   isAdminLoading.value = true
   try {
-    const { $auth, $db } = useNuxtApp()
-    const { signInWithEmailAndPassword } = await import('firebase/auth')
-    const { doc, getDoc } = await import('firebase/firestore')
+    const { auth, db } = useFirebase()
 
-    if (!$auth) {
+    if (!auth) {
       errorMessage.value = 'Firebase tidak dikonfigurasi. Periksa .env Anda.'
       isAdminLoading.value = false
       return
     }
 
-    const result = await signInWithEmailAndPassword($auth, email.value, password.value)
+    const result = await signInWithPassword(auth, email.value, password.value)
 
     let role = 'mahasiswa'
     try {
-      const userDocRef = doc($db, 'users', result.user.uid)
-      const userDocSnap = await getDoc(userDocRef)
-      if (userDocSnap.exists()) {
-        role = String(userDocSnap.data().role || 'mahasiswa').trim().toLowerCase()
+      const userRecord = await getUserRecord(db!, result.user.uid)
+      if (userRecord) {
+        role = String(userRecord.data.role || 'mahasiswa').trim().toLowerCase()
       }
     } catch (readError) {
       console.warn('Gagal membaca dokumen user saat login:', readError)
@@ -357,74 +358,26 @@ const loginWithPasskey = async () => {
   isPasskeyLoading.value = true
   
   try {
-    const { $auth, $db } = useNuxtApp()
-    const { signInWithCustomToken } = await import('firebase/auth')
-    const { doc, getDoc } = await import('firebase/firestore')
+    const { auth, requireDb } = useFirebase()
+    const result = await signInWithPasskey(auth!)
 
-    // 1. Dapatkan opsi authentication dari server
-    const response = await fetch('/api/webauthn/generate-authentication', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    
-    if (!response.ok) throw new Error('Gagal menghubungi server keamanan.')
-    const { options, sessionId } = await response.json()
-
-    // 2. Tampilkan prompt sidik jari bawaan OS (Biometric Sensor)
-    let asseResp;
-    try {
-      asseResp = await startAuthentication(options)
-    } catch (error: any) {
-      if (error.name === 'NotAllowedError') {
-        throw new Error('Proses dibatalkan atau sidik jari tidak cocok.')
-      }
-      throw error
+    // Cek role
+    const userRecord = await getUserRecord(requireDb(), result.user.uid)
+    let role = 'mahasiswa'
+    if (userRecord) {
+      role = (userRecord.data.role || '').trim()
     }
 
-    // 3. Verifikasi hasil pindaian ke server
-    const verificationResp = await fetch('/api/webauthn/verify-authentication', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId,
-        authenticationResponse: asseResp
-      })
-    })
+    const userRole = useState('userRole')
+    const firebaseUser = useState('firebaseUser')
+    userRole.value = role
+    firebaseUser.value = result.user
 
-    if (!verificationResp.ok) {
-      const err = await verificationResp.json()
-      throw new Error(err.message || 'Verifikasi sidik jari ditolak server.')
-    }
-    
-    // 4. Server merilis tiket masuk (Custom Token)
-    const verification = await verificationResp.json()
-    if (verification.verified && verification.token) {
-      // 5. Login ke Firebase menggunakan Custom Token
-      const result = await signInWithCustomToken($auth, verification.token)
-
-      // Cek role
-      const userDocRef = doc($db, 'users', result.user.uid)
-      const userDocSnap = await getDoc(userDocRef)
-      let role = 'mahasiswa'
-      if (userDocSnap.exists()) {
-        role = (userDocSnap.data().role || '').trim()
-      }
-
-      const userRole = useState('userRole')
-      const firebaseUser = useState('firebaseUser')
-      userRole.value = role
-      firebaseUser.value = result.user
-
-      if (role === 'admin' || role === 'super_admin' || role === 'pengurus') {
-        navigateTo('/dashboard')
-      } else {
-        navigateTo('/dashboard/mahasiswa')
-      }
-
+    if (role === 'admin' || role === 'super_admin' || role === 'pengurus') {
+      navigateTo('/dashboard')
     } else {
-      throw new Error('Verifikasi gagal di tahap akhir.')
+      navigateTo('/dashboard/mahasiswa')
     }
-
   } catch (error: any) {
     console.error('Passkey Login Error:', error)
     errorMessage.value = error.message || 'Login sidik jari gagal.'
@@ -441,10 +394,9 @@ const sendLoginLink = async () => {
   errorMahasiswa.value = ''
   
   try {
-    const { $auth } = useNuxtApp()
-    const { sendSignInLinkToEmail } = await import('firebase/auth')
-    
-    if (!$auth) throw new Error('Konfigurasi Firebase belum siap.')
+    const { auth } = useFirebase()
+
+    if (!auth) throw new Error('Konfigurasi Firebase belum siap.')
 
     const actionCodeSettings = {
       // Menyisipkan parameter email ke dalam URL agar sistem tidak perlu bertanya lagi
@@ -452,7 +404,7 @@ const sendLoginLink = async () => {
       handleCodeInApp: true,
     }
 
-    await sendSignInLinkToEmail($auth, mhsEmail.value, actionCodeSettings)
+    await sendEmailSignInLink(auth, mhsEmail.value, actionCodeSettings)
     
     window.localStorage.setItem('emailForSignIn', mhsEmail.value)
     linkSent.value = true

@@ -120,6 +120,9 @@
 </template>
 
 <script setup lang="ts">
+import { signOutUser } from '~/services/firebase'
+import { onUserChanged } from '~/features/auth'
+import { listActivityLogsByActor } from '~/features/users'
 import { ref, onMounted } from 'vue'
 
 const profileState = useState('mahasiswaProfile', () => ({
@@ -129,11 +132,7 @@ const profileState = useState('mahasiswaProfile', () => ({
 
 const logout = async () => {
   try {
-    const { $auth } = useNuxtApp()
-    if ($auth) {
-      const { signOut } = await import('firebase/auth')
-      await signOut($auth)
-    }
+    await signOutUser(useFirebase().auth)
     navigateTo('/')
   } catch (error) {
     console.error('Logout error:', error)
@@ -150,21 +149,12 @@ const formatTime = (isoString: string) => {
 
 onMounted(async () => {
   try {
-    const { $auth, $db } = useNuxtApp()
-    if (!$auth || !$db) return
-    
-    $auth.onAuthStateChanged(async (user: any) => {
+    const { auth, db } = useFirebase()
+    if (!auth || !db) return
+
+    onUserChanged(auth, async (user) => {
       if (user) {
-        const { collection, query, where, getDocs } = await import('firebase/firestore')
-        const q = query(
-          collection($db, 'activityLogs'),
-          where('aktorUid', '==', user.uid)
-        )
-        const snap = await getDocs(q)
-        const allLogs = snap.docs.map(d => ({ id: d.id, ...d.data() as any }))
-        // sort by timestamp desc locally to avoid requiring compound index initially
-        allLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-        logs.value = allLogs.slice(0, 5) // ambil 5 terbaru
+        logs.value = (await listActivityLogsByActor(db, user.uid)).slice(0, 5) // ambil 5 terbaru
       }
     })
   } catch (error) {

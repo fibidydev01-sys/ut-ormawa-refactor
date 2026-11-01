@@ -141,7 +141,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { PengurusMember, BidangItem } from '~/composables/usePengurus'
+import type { PengurusMember, BidangItem } from '~/features/pengurus'
 
 useSeoMeta({
   title: 'Struktur Kepengurusan',

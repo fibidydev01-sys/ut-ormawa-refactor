@@ -43,6 +43,7 @@ Tanpa `.env`, halaman publik tetap tampil tapi data Firestore & login tidak jala
 | `npm run typecheck` | vue-tsc dengan *ratchet*: error lama ditoleransi, error baru gagal |
 | `npm run test:routes` | route parity — URL page & API harus sama dengan baseline |
 | `npm run build:test` lalu `npm run test:screens` | screenshot parity rute publik (desktop & mobile) |
+| `npm run build:test` lalu `npm run test:e2e` | E2E alur data di Firebase Emulator Suite (butuh Java 11+; `firebase-tools` diambil via `npx`, atau set `FIREBASE_BIN`) |
 | `npm run check` | lint + typecheck + route parity (yang dijalankan CI) |
 
 ## Struktur (saat ini)

@@ -125,8 +125,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import type { Article } from '~/types/database'
-import type { Timestamp } from 'firebase/firestore'
+import type { Article, Timestamp } from '~/types/database'
 
 useSeoMeta({
   title: 'Artikel & Berita',

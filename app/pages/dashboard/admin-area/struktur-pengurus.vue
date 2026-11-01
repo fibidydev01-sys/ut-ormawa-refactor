@@ -296,7 +296,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { PengurusMember, BidangItem } from '~/composables/usePengurus'
+import type { PengurusMember, BidangItem } from '~/features/pengurus'
 
 definePageMeta({
   layout: 'dashboard',
@@ -407,7 +407,7 @@ const MemberFormRow = defineComponent({
 
 
 const { getStruktur, saveStruktur, generateId } = usePengurus()
-const { uploadImage } = useStorage()
+const { uploadImage } = useUpload()
 
 // ── State ──────────────────────────────────────────────────
 const isLoading = ref(true)

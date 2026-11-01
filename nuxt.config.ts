@@ -37,6 +37,10 @@ export default defineNuxtConfig({
   // → <SiteHeader />. Nama file komponen harus unik (GOLDEN-PLAN §4.2).
   components: [{ path: '~/components', pathPrefix: false }],
 
+  // Composable fitur (features/<domain>/use-*.ts) ikut di-auto-import seperti
+  // composables/. Service (*.service.ts) sengaja TIDAK — import eksplisit (R8).
+  imports: { dirs: ['features/*/use-*.ts'] },
+
   modules: [
     '@pinia/nuxt',
     '@nuxtjs/tailwindcss',

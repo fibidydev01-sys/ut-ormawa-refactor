@@ -12,7 +12,7 @@
 
 import { initializeApp, getApps } from 'firebase/app'
 import type { FirebaseApp } from 'firebase/app'
-import { getAuth, connectAuthEmulator } from 'firebase/auth'
+import { getAuth, connectAuthEmulator, signOut } from 'firebase/auth'
 import type { Auth } from 'firebase/auth'
 import { getFirestore, connectFirestoreEmulator, doc, getDoc } from 'firebase/firestore'
 import type { Firestore } from 'firebase/firestore'
@@ -105,7 +105,6 @@ export async function fetchUserAccess(db: Firestore, uid: string): Promise<UserA
 /** Keluar dari Firebase Auth. `false` bila auth belum tersedia. */
 export async function signOutUser(auth: Auth | undefined): Promise<boolean> {
   if (!auth) return false
-  const { signOut } = await import('firebase/auth')
   await signOut(auth)
   return true
 }

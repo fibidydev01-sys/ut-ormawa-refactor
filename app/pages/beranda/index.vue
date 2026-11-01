@@ -241,8 +241,7 @@
 
 <script setup lang="ts">
 import { computed, h, onMounted, ref } from 'vue'
-import type { Article } from '~/types/database'
-import type { Timestamp } from 'firebase/firestore'
+import type { Article, Timestamp } from '~/types/database'
 
 useSeoMeta({
   title: 'Beranda - Portal Resmi Organisasi Mahasiswa',

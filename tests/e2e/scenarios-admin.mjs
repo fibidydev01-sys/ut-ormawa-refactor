@@ -40,13 +40,19 @@ export const ADMIN_SCENARIOS = [
       await f.locator('input[value="manage_articles"]').check()
       await f.locator('button[type="submit"]').click()
 
-      const created = await eventually(async () => {
-        try {
-          return await admin.auth.getUserByEmail('baru@ormawa.test')
-        } catch {
-          return null
-        }
-      }, 'akun Auth tidak dibuat lewat /api/create-user')
+      const created = await eventually(
+        async () => {
+          try {
+            return await admin.auth.getUserByEmail('baru@ormawa.test')
+          } catch {
+            return null
+          }
+          // Panggilan pertama Firebase Admin di server bisa lambat (lookup metadata
+          // GCE ditolak proxy di lingkungan container/CI) — bukan perilaku aplikasi.
+        },
+        'akun Auth tidak dibuat lewat /api/create-user',
+        30_000,
+      )
       const doc = (await admin.db.doc(`users/${created.uid}`).get()).data()
       assert(
         doc.role === 'ADMIN' && doc.organization_id === 'robotika',

@@ -114,6 +114,9 @@
 </template>
 
 <script setup lang="ts">
+import { signOutUser } from '~/services/firebase'
+import { onUserChanged } from '~/features/auth'
+import { getUserRecord, setUserRecord } from '~/features/users'
 import { ref, onMounted, computed } from 'vue'
 
 const { logActivity } = useActivityLog()
@@ -139,20 +142,18 @@ const currentUserUid = ref<string | null>(null)
 // Mengambil data saat komponen dimuat
 onMounted(async () => {
   try {
-    const { $auth, $db } = useNuxtApp()
-    if (!$auth || !$db) return
+    const { auth, db } = useFirebase()
+    if (!auth || !db) return
 
-    $auth.onAuthStateChanged(async (user: any) => {
+    onUserChanged(auth, async (user) => {
       if (user) {
         currentUserUid.value = user.uid
         
         // Ambil data dari Firestore
-        const { doc, getDoc } = await import('firebase/firestore')
-        const userDocRef = doc($db, 'users', user.uid)
-        const userDocSnap = await getDoc(userDocRef)
-        
-        if (userDocSnap.exists()) {
-          const data = userDocSnap.data()
+        const userRecord = await getUserRecord(db, user.uid)
+
+        if (userRecord) {
+          const data = userRecord.data
           form.value.nama = data.nama || user.displayName || ''
           form.value.nim = data.nim || ''
           form.value.prodi = data.prodi || ''
@@ -238,14 +239,11 @@ const saveProfile = async () => {
   if (!isFormValid.value || !currentUserUid.value) return
   
   try {
-    const { $db } = useNuxtApp()
-    if (!$db) return
-
-    const { doc, setDoc } = await import('firebase/firestore')
-    const userDocRef = doc($db, 'users', currentUserUid.value)
+    const { db } = useFirebase()
+    if (!db) return
     
     // Simpan ke Firestore
-    await setDoc(userDocRef, {
+    await setUserRecord(db, currentUserUid.value, {
       nama: form.value.nama,
       nim: form.value.nim,
       prodi: form.value.prodi,
@@ -271,11 +269,7 @@ const saveProfile = async () => {
 
 const logout = async () => {
   try {
-    const { $auth } = useNuxtApp()
-    if ($auth) {
-      const { signOut } = await import('firebase/auth')
-      await signOut($auth)
-    }
+    await signOutUser(useFirebase().auth)
     navigateTo('/')
   } catch (error) {
     console.error('Logout error:', error)

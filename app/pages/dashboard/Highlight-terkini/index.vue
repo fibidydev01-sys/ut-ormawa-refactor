@@ -129,6 +129,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import type { ArticleDocument } from '~/types/database'
+import { getUserRecord } from '~/features/users'
 
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 useHead({ title: 'Artikel — Admin Panel Ormawa' })
@@ -156,13 +157,11 @@ async function loadArticles() {
     } else if (role === 'ADMIN') {
       // Untuk ADMIN, ambil data organization_id dari Firestore
       // Kita perlu fetch data UserDocument user saat ini terlebih dahulu
-      const { $db } = useNuxtApp()
-      const { doc, getDoc } = await import('firebase/firestore')
-      if ($db && firebaseUser.value) {
-        const userDocRef = doc($db, 'users', firebaseUser.value.uid)
-        const userSnap = await getDoc(userDocRef)
-        if (userSnap.exists()) {
-          const orgId = userSnap.data().organization_id
+      const { db } = useFirebase()
+      if (db && firebaseUser.value) {
+        const userRecord = await getUserRecord(db, firebaseUser.value.uid)
+        if (userRecord) {
+          const orgId = userRecord.data.organization_id
           if (orgId) {
             articles.value = await getArticlesByOrganization(orgId)
           }
