@@ -795,7 +795,8 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 7. `npm run test:routes` (R2) dan `npm run build:test && npm run test:screens` (R4).
 8. Smoke test manual: buka `/beranda`, login admin, buka 1 halaman dashboard, logout.
 9. Fase A: `test:screens` wajib lulus tanpa `--update`. Baseline hanya boleh di-update bila perubahan tampilan disetujui (Fase B).
-10. Update §14 (centang + tanggal + catatan singkat), push, buka PR dengan ringkasan & checklist DoD.
+10. Temuan baru (bug, celah, perilaku aneh) → `docs/temuan.md` sesuai aturan pencatatannya; jangan diperbaiki di Fase A.
+11. Update §14 (centang + tanggal + catatan singkat), push, buka PR dengan ringkasan & checklist DoD.
 
 **Template deskripsi PR**
 
@@ -808,7 +809,7 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 - [ ] route parity identik
 - [ ] screenshot dicek (lampirkan bila beda)
 - [ ] smoke test login + CRUD
-### Di luar scope (dicatat di GOLDEN-PLAN §13)
+### Di luar scope (dicatat di docs/temuan.md)
 - …
 ```
 
@@ -816,39 +817,15 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 
 ## 13. Temuan, Risiko & Pertanyaan Terbuka
 
-Temuan saat audit kode baseline (belum diubah — sesuai R1):
+📌 **Semua temuan dicatat di [`docs/temuan.md`](docs/temuan.md)** — satu sumber:
+ringkasan bertingkat (🔴/🟠/🟡/⚪), bukti per temuan, status, rencana sesi, dan
+pertanyaan Q0–Q9 untuk pemilik proyek.
 
-| # | Temuan | Sikap sementara |
-|---|---|---|
-| T1 | URL `/dashboard/Highlight-terkini` pakai huruf kapital | **Pertahankan.** Opsi nanti: tambah alias `/dashboard/highlight-terkini` (redirect) — butuh persetujuan |
-| T2 | Sidebar menautkan rute yang **belum ada**: `/dashboard/admin-area/{profil,event,galeri,keanggotaan,pengaturan}` | Pertahankan link (fitur tetap). Sesudah `error.vue` jadi, tetap 404 seperti sekarang. Perlu keputusan: sembunyikan atau buatkan halaman |
-| T3 | Navbar menautkan `/market` yang tidak ada | Sama seperti T2 |
-| T4 | Dua area admin paralel: `admin-area/*` (legacy) dan `users`/`organizations`/`Highlight-terkini` | Pertahankan keduanya; usulan penggabungan setelah S14 |
-| T5 | Role `mahasiswa` dipakai di plugin tapi tidak ada di tipe `UserRole` | Tambah di tipe (S2), logika tidak diubah |
-| T6 | Dokumen user yang belum ada dianggap `mahasiswa` | Pertahankan; catat sebagai risiko keamanan ringan (rules Firestore tetap penjaga) |
-| T7 | `/sandbox` ikut ter-deploy ke produksi | Pertahankan (dipindah ke `(dev)`), usulan: nonaktifkan di produksi via `routeRules` — butuh persetujuan |
-| T8 | 🔴 **KRITIS:** `POST /api/create-user` & `/api/delete-user` **tidak memeriksa siapa pemanggilnya** (tidak ada `verifyIdToken`/cookie). Siapa pun yang tahu URL-nya bisa membuat akun `SUPER_ADMIN` atau menghapus user lewat Firebase Admin | Satu-satunya pengecualian R1 yang direkomendasikan: di S7 pasang `requireRole('SUPER_ADMIN')` (pemakaian sah dari dashboard tidak berubah, hanya pemanggil tanpa hak yang ditolak). **Butuh persetujuan Q0** — idealnya di-hotfix juga di repo produksi sekarang |
-| T9 | Nama file gambar berspasi | Rename di S12 |
-| T10 | Passkey (WebAuthn) terikat RP ID/domain | Uji ulang di setiap domain (preview & produksi) di S14 |
-| T11 | ISR + konten spesifik user | Diselesaikan dengan `AuthAction` client-side (§6.4) |
-| T15 | `/dashboard/mahasiswa` & `/edit-profil` tidak memakai middleware `auth` — halaman terbuka untuk siapa pun; data hanya dimuat bila sudah login (Firestore rules tetap menjaga data) | Dibiarkan (R1). Usulan: pasang gate khusus mahasiswa di S7 — butuh persetujuan |
-| T16 | SSR `/dashboard/**` tanpa login **menunggu 5 detik** (timeout middleware menunggu `isAuthReady` yang hanya diisi di client) baru redirect 302 ke `/login/admin` — terukur 5,1 s vs 0,05 s untuk `/beranda` | Diselesaikan oleh session cookie di S7 (server langsung tahu status login) |
-| T17 | Modal tambah/edit di **Organisasi** dan **Users** tidak menutup setelah simpan; modal hapus juga tidak menutup. `closeModal()`/`cancelDelete()` dipanggil saat `isSubmitting`/`isDeleting` masih `true`, sehingga langsung `return`. Data tetap tersimpan | Dikunci E2E (R1). Perbaikan 1 baris per handler di Fase B — butuh persetujuan |
-| T18 | `firestore.rules` **tidak punya aturan untuk `activityLogs`** → semua `logActivity()` ditolak diam-diam, panel "Aktivitas" admin-area & mahasiswa selalu kosong | Dikunci E2E. Usulan: tambah rule (tulis: user login untuk dirinya sendiri; baca: SUPER_ADMIN / pemilik) — butuh persetujuan |
-| T19 | Rules `users` hanya mengizinkan buat dokumen sendiri dengan `role == 'ADMIN'` & update hanya `full_name` → **simpan profil mahasiswa selalu gagal** dan login **magic link**/**Google** pertama kali gagal membuat dokumen mahasiswa (user tetap ter-login di Auth, tapi muncul pesan error) | Dikunci E2E. Perlu keputusan desain rules mahasiswa |
-| T20 | WebAuthn server di-hardcode `rpID: 'localhost'`, origin `http://localhost:3000` → **login & daftar sidik jari tidak bisa jalan di domain produksi** | Fase B: ambil dari `runtimeConfig` (`siteUrl`). Uji ulang di S14 |
-| T22 | Isi artikel dirender dengan `v-html` dari HTML editor TipTap — admin mana pun yang boleh menulis artikel bisa menyisipkan skrip (*stored XSS*) | Fase B: sanitasi saat render (mis. DOMPurify) atau saat simpan — butuh persetujuan |
-| T12 | Tailwind v4 mengubah beberapa nama kelas | `@tailwindcss/upgrade` + screenshot diff di S9 |
-| T13 | 🟠 `create-admin.js` berisi password SUPER_ADMIN hardcoded (`SuperAdmin123!`) dan sudah ada di riwayat git | ✅ S1: `scripts/create-admin.js` kini baca `ADMIN_EMAIL`/`ADMIN_PASSWORD` dari env. ⚠ Password lama tetap ada di riwayat git `ormawautsby` & repo ini → **ganti password akun itu di produksi bila masih dipakai** |
-| T14 | 🟠 Dashboard (`admin-area/index.vue`, `kelola-user.vue`) menampilkan `user.password` — artinya password tersimpan **plaintext** di dokumen Firestore `users` | Fitur dibekukan (R1) selama Fase A; usulan hapus field & tampilan ini setelah Fase A — butuh persetujuan (Q5) |
-
-Pertanyaan untuk pemilik proyek (jawab di sini):
-- [ ] Q0 — T8: setuju API `create-user`/`delete-user` diamankan (wajib SUPER_ADMIN)? Hotfix di produksi juga?
-- [ ] Q1 — T1/T2/T3/T7: boleh dirapikan setelah refactor selesai, atau tetap selamanya?
-- [ ] Q2 — Lama sesi login: 7 hari (default) atau 14 hari (maks Firebase)?
-- [ ] Q3 — `/login/*` saat sudah login: tampilkan kartu "Buka Dashboard" (rekomendasi) atau redirect otomatis?
-- [ ] Q4 — Gaya cookie banner: bar bawah (rekomendasi, tidak menghalangi) atau modal tengah seperti Fibidy?
-- [ ] Q5 — T14: boleh berhenti menyimpan/menampilkan password plaintext (Firebase Auth sudah menyimpannya dengan aman)?
+Yang paling mendesak (perlu hotfix di produksi, tidak menunggu refactor):
+- **T8** API `create-user`/`delete-user` tanpa cek pemanggil (Q0)
+- **T28** Storage `organizations/` & `articles/` bisa ditulis tanpa login (Q6)
+- **T26/T27** rules organisasi & pengurus terbuka untuk semua user login (Q6)
+- **T13** ganti password SUPER_ADMIN yang pernah ter-commit
 
 ---
 

@@ -5,6 +5,7 @@ berita/artikel, struktur pengurus, dan dashboard admin & mahasiswa.
 
 > 🚧 Repo ini sedang di-refactor dari `ormawautsby`. Aturan, struktur target, dan
 > roadmap ada di **[GOLDEN-PLAN.md](./GOLDEN-PLAN.md)** — baca dulu sebelum mengubah apa pun.
+> Bug & celah keamanan yang ditemukan: **[docs/temuan.md](./docs/temuan.md)**.
 
 ## Stack
 
@@ -53,7 +54,7 @@ app/         halaman, komponen, composable, plugin (Nuxt 4 srcDir)
 server/      API Nitro (Firebase Admin, WebAuthn, sitemap)
 public/      aset statis
 scripts/     script utilitas — lihat scripts/README.md
-docs/        dokumentasi (skema database)
+docs/        dokumentasi: skema database, temuan (docs/temuan.md)
 tests/       route/screenshot/typecheck parity + baseline
 ```
 
