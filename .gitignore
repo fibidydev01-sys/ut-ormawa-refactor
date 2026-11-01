@@ -29,6 +29,6 @@ serviceAccountKey.json
 
 # Refactor
 .commit_msg.txt
-tests/baseline/screens/*.diff.png
+tests/baseline/screens/current/
 test-results
 playwright-report
