@@ -42,7 +42,7 @@
 | [T19](#t19) | 🟠      | Fitur / Rules      | Profil mahasiswa tidak pernah bisa disimpan; login mahasiswa pertama kali error    | 🔒 ⏳ Q8                     | Fase B          |
 | [T18](#t18) | 🟠      | Fitur / Rules      | Log aktivitas selalu ditolak → panel aktivitas selalu kosong                       | 🔒 ⏳ Q8                     | Fase B          |
 | [T20](#t20) | 🟠      | Fitur / Auth       | Login & daftar sidik jari tidak bisa jalan di domain produksi                      | 🔒                           | Fase B, uji S14 |
-| [T16](#t16) | 🟡      | Performa / Auth    | Buka `/dashboard/*` tanpa login: tunggu 5 detik baru redirect                      | 📅                           | S7              |
+| [T16](#t16) | 🟡      | Performa / Auth    | Buka `/dashboard/*` tanpa login: tunggu 5 detik baru redirect                      | ✅ S6                        | —               |
 | [T24](#t24) | 🟡      | Fitur / Auth       | Akun `SUPER_ADMIN` yang login pakai sidik jari dibawa ke dashboard mahasiswa       | 🔒                           | S7              |
 | [T25](#t25) | 🟡      | Fitur / Auth       | `kelola-user` & tab Pengguna admin-area hanya untuk role lama `super_admin`        | 🔒                           | Fase B          |
 | [T23](#t23) | 🟡      | Fitur / API        | `delete-user` gagal 500 bila server belum pernah menjalankan `create-user`         | 📅                           | S7              |
@@ -59,6 +59,8 @@
 | [T31](#t31) | ⚪      | UI                 | Indikator debug "Role: …" tampil di sidebar                                        | ⏳                           | —               |
 | [T32](#t32) | ⚪      | Konten             | Tautan sosial & footer masih placeholder (`#`, `/`, `instagram.com`)               | ⏳                           | —               |
 | [T33](#t33) | ⚪      | Performa           | Gambar contoh dari `images.unsplash.com` (eksternal)                               | 📅                           | S12             |
+| [T34](#t34) | 🟡      | Performa           | HTML `/beranda` & `/media/artikel` memuat isi lengkap SEMUA artikel terbit         | ⏳                           | S12             |
+| [T35](#t35) | ⚪      | Konten             | Artikel baru tampil di beranda paling lambat 10 menit (cache CDN)                  | ℹ️ disengaja                 | —               |
 | [T1](#t1)   | ⚪      | URL                | `/dashboard/Highlight-terkini` berhuruf kapital                                    | ⏳ Q1                        | —               |
 | [T5](#t5)   | ⚪      | Tipe               | Role `mahasiswa` tidak ada di tipe `UserRole`                                      | ✅ S2                        | —               |
 | [T9](#t9)   | ⚪      | Aset               | Nama file gambar berspasi                                                          | 📅                           | S12             |
@@ -197,7 +199,7 @@
   timeout 5 detik. Terukur 5,1 s vs 0,05 s untuk `/beranda` (S2).
 - **Dampak:** setiap buka/refresh halaman dashboard langsung dari URL terasa "hang"; reload
   di dashboard selalu dilempar ke login.
-- **Rencana:** session cookie `__session` (S7) — server langsung tahu status login.
+- **Status:** ✅ S6 — `/dashboard/**` kini SPA (`ssr: false`): server langsung membalas 200 dan gate auth berjalan di browser. Dikunci E2E `render: buka /dashboard/users langsung via URL…`. Session cookie (S7) tetap dibutuhkan agar halaman publik tahu status login.
 
 ### T24
 
@@ -264,6 +266,17 @@
 - **Rekomendasi:** putuskan: sambungkan ke Firestore/WA/email, atau beri label
   "segera hadir". (Q9)
 
+### T34
+
+**Payload halaman publik membawa isi lengkap semua artikel.**
+
+- **Bukti:** `server/api/public/articles.get.ts` mengirim seluruh field (termasuk `content` HTML)
+  semua artikel terbit, padahal beranda & katalog hanya butuh judul, cover, tanggal, dan cuplikan.
+  Sebelum S6 data yang sama diunduh Firestore client; kini ikut di HTML/payload SSR.
+- **Dampak:** ukuran HTML membesar seiring jumlah artikel → LCP lebih lambat.
+- **Rekomendasi:** API mengirim `excerpt` (± 200 karakter) tanpa `content`; pagination bila
+  artikel > 50 (S12).
+
 ### T6
 
 User yang login tapi tidak punya dokumen `users` (atau gagal dibaca) dianggap
@@ -292,19 +305,20 @@ Passkey terikat RP ID/domain — selain memperbaiki T20, uji ulang di setiap dom
 
 ## ⚪ Rendah
 
-| ID                  | Temuan                                                                                                | Bukti / catatan                                                        |
-| ------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| <a id="t1"></a>T1   | URL `/dashboard/Highlight-terkini` berhuruf kapital                                                   | Dipertahankan (R2). Opsi: alias huruf kecil (Q1)                       |
-| <a id="t2"></a>T2   | Sidebar menautkan `/dashboard/admin-area/{profil,event,galeri,keanggotaan,pengaturan}` yang belum ada | `constants/dashboard-menu.ts` (Q1)                                     |
-| <a id="t3"></a>T3   | Menu mobile menautkan `/market` yang belum ada                                                        | `constants/nav.ts` (Q1)                                                |
-| <a id="t5"></a>T5   | Role `mahasiswa` tidak ada di tipe `UserRole`                                                         | ✅ S2: tipe `AppRole`                                                  |
-| <a id="t9"></a>T9   | Nama file gambar berspasi (`Background ormawa.png`, `ZAENAL ARIFIN.jpg`)                              | Rename di S12                                                          |
-| <a id="t11"></a>T11 | Halaman ber-cache (ISR) tidak boleh menyimpan tombol khusus user                                      | `AuthAction` client-side, S8                                           |
-| <a id="t12"></a>T12 | Tailwind v4 mengganti beberapa nama kelas                                                             | `@tailwindcss/upgrade` + screenshot, S9                                |
-| <a id="t30"></a>T30 | "Beranda Publik" di dropdown profil dashboard mengarah ke `/dashboard`                                | `components/layout/nav-user.vue`                                       |
-| <a id="t31"></a>T31 | Indikator debug "Role: …" tampil ke semua admin                                                       | `components/layout/dashboard-sidebar.vue`                              |
-| <a id="t32"></a>T32 | Tautan sosial (`instagram.com`, `facebook.com`, …) & footer (`#`, `/`) masih placeholder              | `features/media/media.data.ts`, `constants/site.ts`, `site-footer.vue` |
-| <a id="t33"></a>T33 | Gambar contoh dari `images.unsplash.com` (kegiatan, profil Cari Teman)                                | Ketergantungan eksternal; pertimbangkan aset lokal di S12              |
+| ID                  | Temuan                                                                                                | Bukti / catatan                                                                    |
+| ------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| <a id="t1"></a>T1   | URL `/dashboard/Highlight-terkini` berhuruf kapital                                                   | Dipertahankan (R2). Opsi: alias huruf kecil (Q1)                                   |
+| <a id="t2"></a>T2   | Sidebar menautkan `/dashboard/admin-area/{profil,event,galeri,keanggotaan,pengaturan}` yang belum ada | `constants/dashboard-menu.ts` (Q1)                                                 |
+| <a id="t3"></a>T3   | Menu mobile menautkan `/market` yang belum ada                                                        | `constants/nav.ts` (Q1)                                                            |
+| <a id="t5"></a>T5   | Role `mahasiswa` tidak ada di tipe `UserRole`                                                         | ✅ S2: tipe `AppRole`                                                              |
+| <a id="t9"></a>T9   | Nama file gambar berspasi (`Background ormawa.png`, `ZAENAL ARIFIN.jpg`)                              | Rename di S12                                                                      |
+| <a id="t11"></a>T11 | Halaman ber-cache (ISR) tidak boleh menyimpan tombol khusus user                                      | `AuthAction` client-side, S8                                                       |
+| <a id="t12"></a>T12 | Tailwind v4 mengganti beberapa nama kelas                                                             | `@tailwindcss/upgrade` + screenshot, S9                                            |
+| <a id="t30"></a>T30 | "Beranda Publik" di dropdown profil dashboard mengarah ke `/dashboard`                                | `components/layout/nav-user.vue`                                                   |
+| <a id="t31"></a>T31 | Indikator debug "Role: …" tampil ke semua admin                                                       | `components/layout/dashboard-sidebar.vue`                                          |
+| <a id="t32"></a>T32 | Tautan sosial (`instagram.com`, `facebook.com`, …) & footer (`#`, `/`) masih placeholder              | `features/media/media.data.ts`, `constants/site.ts`, `site-footer.vue`             |
+| <a id="t35"></a>T35 | Sejak S6, `/beranda` & `/media/artikel` di-cache CDN 10 menit (`/berita/*` & struktur pengurus 1 jam) | Konsekuensi ISR yang disengaja; durasi diatur di `nuxt.config.ts` → `isrHeaders()` |
+| <a id="t33"></a>T33 | Gambar contoh dari `images.unsplash.com` (kegiatan, profil Cari Teman)                                | Ketergantungan eksternal; pertimbangkan aset lokal di S12                          |
 
 > T21 sempat dilaporkan di chat ("modal Cari Teman tidak pernah dirender") — **keliru**,
 > modalnya ada setelah footer. Dibatalkan; nomor tidak dipakai ulang.
