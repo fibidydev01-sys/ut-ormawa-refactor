@@ -787,7 +787,7 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
    `npm run build:test && npm run test:routes && npm run test:screens` — jaring pengaman harus hijau sebelum mulai.
 
 **Selama sesi**
-4. Kerjakan **hanya** scope sesi itu. Temuan di luar scope → catat di §13, jangan dikerjakan.
+4. Kerjakan **hanya** scope sesi itu. Temuan di luar scope → catat di `docs/temuan.md`, jangan dikerjakan.
 5. Commit kecil per langkah (R22).
 
 **Akhiri sesi**

@@ -1,6 +1,4 @@
 {
-  "app/pages/dashboard/admin-area/struktur-pengurus.vue": 6,
-  "app/pages/dashboard/users/index.vue": 2,
   "server/api/articles/[slug].get.ts": 4,
   "server/api/webauthn/generate-registration.ts": 2
 }
