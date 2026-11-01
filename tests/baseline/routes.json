@@ -40,9 +40,12 @@
     "ALL /api/webauthn/generate-registration",
     "ALL /api/webauthn/verify-authentication",
     "ALL /api/webauthn/verify-registration",
+    "DELETE /api/auth/session",
     "GET /api/articles/:slug",
+    "GET /api/auth/me",
     "GET /api/public/articles",
     "GET /api/public/pengurus",
+    "POST /api/auth/session",
     "POST /api/create-user",
     "POST /api/delete-user"
   ]

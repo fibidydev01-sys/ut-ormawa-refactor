@@ -6,6 +6,7 @@
 // state auth ke stores/auth.ts. Plugin ini hanya merangkai:
 //   1. initFirebase()          → provide $auth, $db, $storage
 //   2. onAuthStateChanged      → isi auth store (user, role, modul)
+//   3. [S7] syncServerSession  → cookie __session ikut login/logout
 // Perilaku identik dengan versi lama.
 // ============================================================
 
@@ -15,6 +16,7 @@ import type { Firestore } from 'firebase/firestore'
 import type { FirebaseStorage } from 'firebase/storage'
 import { initFirebase, fetchUserAccess } from '~/services/firebase'
 import { useAuthStore } from '~/stores/auth'
+import { syncServerSession } from '~/services/session'
 
 declare module '#app' {
   interface NuxtApp {
@@ -65,5 +67,11 @@ export default defineNuxtPlugin((nuxtApp) => {
     }
 
     authStore.isReady = true
+
+    // [S7] Cookie __session di server mengikuti status login Firebase.
+    // Gagal sinkron tidak boleh mengganggu login di browser.
+    syncServerSession(user).catch((error) => {
+      console.warn('[session] Gagal sinkron sesi server:', error)
+    })
   })
 })

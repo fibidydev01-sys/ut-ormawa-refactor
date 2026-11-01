@@ -12,6 +12,7 @@ import { ARTICLE_SCENARIOS } from './scenarios-articles.mjs'
 import { ADMIN_SCENARIOS } from './scenarios-admin.mjs'
 import { MAHASISWA_SCENARIOS } from './scenarios-mahasiswa.mjs'
 import { RENDERING_SCENARIOS } from './scenarios-rendering.mjs'
+import { SESSION_SCENARIOS } from './scenarios-session.mjs'
 
 /** PNG 1×1 untuk uji upload ke Storage Emulator. */
 export const PNG_1PX = {
@@ -180,6 +181,12 @@ const PASSWORDLESS_SCENARIOS = [
         async () => (await page.locator('aside').innerText()).includes('Users'),
         'login passkey tidak masuk sebagai super admin',
       )
+      // [S7] login sidik jari juga membuat sesi server
+      await eventually(
+        async () =>
+          (await (await page.request.get(`${BASE_URL}/api/auth/me`)).json()).user?.uid === uid,
+        'login passkey tidak membuat cookie __session',
+      )
     },
   },
 ]
@@ -263,4 +270,5 @@ export const SCENARIOS = [
   ...ADMIN_SCENARIOS,
   ...MAHASISWA_SCENARIOS,
   ...RENDERING_SCENARIOS,
+  ...SESSION_SCENARIOS,
 ]

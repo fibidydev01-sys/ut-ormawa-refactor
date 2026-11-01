@@ -43,6 +43,7 @@ export default defineNuxtConfig({
     '/berita/**': { headers: isrHeaders(3600) },
     '/profil/struktur-pengurus': { headers: isrHeaders(3600) },
     '/api/public/**': { headers: isrHeaders(600) },
+    '/api/auth/**': { headers: { 'cache-control': 'no-store' } },
     '/api/__sitemap__/**': { headers: isrHeaders(3600) },
 
     // Privat / tidak diindeks

@@ -855,6 +855,13 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 - `middleware/auth.ts` baca store; logika redirect identik.
 - (Jika Q0 disetujui) `requireRole('SUPER_ADMIN')` di `create-user` & `delete-user`.
 - **DoD:** login → tutup browser → buka `/beranda` → server kenal user; logout hapus cookie; redirect role sama; passkey & email-link jalan.
+- **Catatan hasil S7 (bagian 1):**
+  - Sinkronisasi di **satu tempat**: `plugins/firebase.client.ts` → `services/session.ts#syncServerSession` setiap `onAuthStateChanged`. Keempat alur login & semua tombol logout tidak diubah sama sekali, dan otomatis ikut.
+  - `POST /api/auth/session` (ID token → session cookie 7 hari), `DELETE /api/auth/session` (hapus cookie), `GET /api/auth/me` → `{ user }`. Cookie `__session` httpOnly+Secure+Lax; petunjuk `ormawa_session` (uid, bisa dibaca JS) mencegah POST berulang & DELETE sia-sia untuk pengunjung anonim.
+  - Tidak ada middleware server global / hidrasi SSR: belum ada UI yang butuh user di server (tombol Dashboard di S8 membaca `/api/auth/me`). Ditambah bila perlu.
+  - Tidak menerapkan cek `auth_time < 5 menit` (saran Firebase) agar login lama yang tersimpan di browser tetap mendapat cookie — risiko dicatat di `server/api/auth/session.post.ts`.
+  - Firebase Hosting menjadikan `__session` bagian kunci cache CDN → user yang login tidak berbagi cache halaman ISR dengan pengunjung lain (benar secara keamanan; cache untuk user login jadi kurang efektif).
+  - **Belum dikerjakan — butuh keputusan:** `requireRole` untuk `create-user`/`delete-user` + perbaikan init `delete-user` (T8/T23, Q0), tujuan login passkey berbasis `normalizeRole` (T24), gate `/dashboard/mahasiswa` (T15), cabut sesi di semua perangkat saat logout (Q10).
 
 #### S8 · Tombol Dashboard + Cookie Consent
 - `auth-action.vue` (§6.4) di navbar desktop & mobile; kartu "sudah masuk" di `/login/*`.
@@ -952,7 +959,7 @@ Yang paling mendesak (perlu hotfix di produksi, tidak menunggu refactor):
 | S4 | Pecah pages publik | ✅ | 2026-11-01 | — | 19 page publik → shell ≤ 61 baris (total 448 baris, dulu ±4.400); 41 komponen fitur ≤ 250 baris + `*.data.ts` + CSS besar via `<style scoped src>`; screenshot 73/73 identik (+ skenario modal Cari Teman, baseline dari build lama); E2E 17/17; typecheck 17 → 14 |
 | S5 | Pecah pages auth & dashboard | ✅ | 2026-11-01 | — | 13 page auth/dashboard → shell (semua 33 page total 572 baris, dulu ±10.400); komponen ≤ 249 baris; `app/` 0 error lint & 0 error TypeScript (sisa 6 error & 15 warning hanya di `server/` + plugin analytics); screenshot 73/73, E2E 17/17 di setiap langkah |
 | S6 | routeRules + SSR data publik | ✅ | 2026-11-01 | — | 14 halaman SSG; /beranda, /media/artikel, /berita, /profil/struktur-pengurus SSR + cache CDN (`s-maxage`); dashboard & sandbox SPA (T16 ✅); `/api/public/{articles,pengurus}`; tanggal publik dikunci WIB; E2E 21/21, screenshot 73/73 |
-| S7 | Session cookie `__session` | ⬜ | | | |
+| S7 | Session cookie `__session` | 🟨 | 2026-11-01 | — | Bagian tanpa keputusan selesai: `/api/auth/{session,me}`, sinkron otomatis di plugin (semua metode login & logout), E2E 24/24. **Menunggu keputusan:** T8/T23 (Q0), T24, T15, Q10 |
 | S8 | Tombol Dashboard + Cookie Consent | ⬜ | | | |
 | S9 | Tailwind v4 + Kliping init | ⬜ | | | |
 | S10 | Marketing UI → Kliping | ⬜ | | | |

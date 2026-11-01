@@ -339,6 +339,7 @@ Centang & tulis jawabannya di sini.
 - [ ] **Q7 — T22:** sanitasi HTML artikel?
 - [ ] **Q8 — T18/T19:** desain rules untuk mahasiswa & log aktivitas?
 - [ ] **Q9 — T29:** form mock (UKM, IMF, aspirasi, pelaporan, cari teman) disambungkan ke backend atau diberi label "segera hadir"?
+- [ ] **Q10 — Logout (S7):** cukup hapus cookie di browser ini (sekarang), atau sekalian cabut sesi di **semua perangkat** (`revokeRefreshTokens`)?
 
 ---
 
