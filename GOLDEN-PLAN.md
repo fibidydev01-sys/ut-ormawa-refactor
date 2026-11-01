@@ -60,10 +60,10 @@ padanan 1:1:
 | `generateMetadata` | `useSeoMeta()` / `useHead()` |
 | `next/image` | `<NuxtImg>` / `<NuxtPicture>` (`@nuxt/image`) |
 | `src/lib/api/*.ts` | `app/services/*.ts` (client) + `server/api/**` (server) |
-| `src/hooks/*` | `app/features/<fitur>/useXxx.ts` (+ `app/composables/*` lintas fitur) |
+| `src/hooks/*` | `app/features/<fitur>/use-xxx.ts` (+ `app/composables/*` lintas fitur) |
 | `src/stores/*` (zustand) | `app/stores/*` (Pinia — sudah terpasang) |
 | `components/ui` (shadcn) | `app/components/ui` (**Kliping**) |
-| `components/shared/cookie-consent.tsx` | `app/components/shared/CookieConsent.vue` |
+| `components/shared/cookie-consent.tsx` | `app/components/shared/cookie-consent.vue` |
 
 ### 1.2 Hosting tetap Firebase
 
@@ -172,6 +172,7 @@ setiap akhir sesi. Pindah folder boleh, URL & perilaku tidak boleh berubah.
 - **R5a — Maksimal 3 level di dalam `app/`** (kecuali `pages/` yang mengikuti URL dan `components/ui/` milik Kliping). Folder fitur **datar**: tanpa subfolder `components/`/`composables/`/`services/`.
 - **R5b — Naik ke `components/shared` hanya bila dipakai ≥ 2 fitur.** Selain itu tetap di folder fiturnya.
 - **R5c — Konten statis** (teks halaman, daftar lomba/laporan/UKM, link WA) di `features/<x>/<x>.data.ts`, bukan di template.
+- **R5d — Nama file kebab-case** (`nama-file.vue`, `use-nama.ts`, `nama.service.ts`, `nama.data.ts`). Pengecualian hanya `components/ui/**` (Kliping) dan folder page yang terikat URL lama.
 - **R5 — Page tipis.** File di `pages/` maksimal ±80 baris: `definePageMeta`,
   `useSeoMeta`, fetch data (`useAsyncData`), lalu merakit komponen. Tidak ada
   logika bisnis, tidak ada panggilan Firestore langsung.
@@ -239,7 +240,7 @@ setiap akhir sesi. Pindah folder boleh, URL & perilaku tidak boleh berubah.
 
 | | ❌ Terlalu nested | ❌ Monolith (baseline) | ✅ Target |
 |---|---|---|---|
-| Contoh | `features/articles/components/form/fields/CoverField.vue` | `pages/dashboard/admin-area/index.vue` 743 baris | `features/articles/ArticleForm.vue` |
+| Contoh | `features/articles/components/form/fields/cover-field.vue` | `pages/dashboard/admin-area/index.vue` 743 baris | `features/articles/article-form.vue` |
 | Kedalaman | 5–6 level | 2 level, isi gemuk | ≤ 3 level |
 
 **Dua keputusan penting:**
@@ -247,8 +248,8 @@ setiap akhir sesi. Pindah folder boleh, URL & perilaku tidak boleh berubah.
    lewat `definePageMeta({ layout })`, bukan folder. Group hanya menambah satu level
    tanpa manfaat. `pages/` = cermin URL apa adanya.
 2. **Folder fitur DATAR.** Tidak ada subfolder `components/` `composables/` `services/`
-   di dalam fitur — jenis file terbaca dari namanya:
-   `ArticleCard.vue` · `useArticles.ts` · `articles.service.ts` · `media.data.ts`.
+   di dalam fitur — jenis file terbaca dari namanya (semua kebab-case):
+   `article-card.vue` · `use-articles.ts` · `articles.service.ts` · `media.data.ts`.
 
 ```
 ut-ormawa-refactor/
@@ -279,45 +280,45 @@ ut-ormawa-refactor/
 │   │
 │   ├── features/                    # ② INTI — satu folder per domain, isi DATAR
 │   │   ├── auth/
-│   │   │   ├── LoginAdminForm.vue · LoginPasskey.vue · LoginEmailLink.vue · LoginGoogle.vue
-│   │   │   ├── PasskeyRegister.vue  #   dari admin-area/index.vue
-│   │   │   ├── useAuth.ts           #   user, role, login*, logout(), hasAccess()
+│   │   │   ├── login-admin-form.vue · login-passkey.vue · login-email-link.vue · login-google.vue
+│   │   │   ├── passkey-register.vue  #   dari admin-area/index.vue
+│   │   │   ├── use-auth.ts           #   user, role, login*, logout(), hasAccess()
 │   │   │   ├── auth.service.ts      #   firebase/auth + /api/webauthn + /api/auth/*
 │   │   │   └── index.ts
 │   │   ├── articles/                #   Highlight-terkini, media/artikel, berita/[slug]
-│   │   │   ├── ArticleCard.vue · ArticleGrid.vue · ArticleDetail.vue
-│   │   │   ├── ArticleTable.vue · ArticleForm.vue
-│   │   │   └── useArticles.ts · articles.service.ts · index.ts
+│   │   │   ├── article-card.vue · article-grid.vue · article-detail.vue
+│   │   │   ├── article-table.vue · article-form.vue
+│   │   │   └── use-articles.ts · articles.service.ts · index.ts
 │   │   ├── organizations/
-│   │   │   ├── OrganizationTable.vue · OrganizationDialog.vue
-│   │   │   └── useOrganizations.ts · organizations.service.ts · index.ts
+│   │   │   ├── organization-table.vue · organization-dialog.vue
+│   │   │   └── use-organizations.ts · organizations.service.ts · index.ts
 │   │   ├── pengurus/
-│   │   │   ├── PengurusChart.vue (publik) · PengurusEditor.vue (admin)
-│   │   │   └── usePengurus.ts · pengurus.service.ts · index.ts
+│   │   │   ├── pengurus-chart.vue (publik) · pengurus-editor.vue (admin)
+│   │   │   └── use-pengurus.ts · pengurus.service.ts · index.ts
 │   │   ├── users/
-│   │   │   ├── UserTable.vue · UserDialog.vue · ActivityLogList.vue
-│   │   │   └── useUsers.ts · useActivityLog.ts · users.service.ts · index.ts
+│   │   │   ├── user-table.vue · user-dialog.vue · activity-log-list.vue
+│   │   │   └── use-users.ts · use-activity-log.ts · users.service.ts · index.ts
 │   │   ├── mahasiswa/
-│   │   │   └── MahasiswaProfileCard.vue · MahasiswaProfileForm.vue · index.ts
-│   │   ├── landing/                 #   section beranda: HeroSection.vue · …Section.vue
-│   │   ├── profil/                  #   TentangUt.vue · TentangOrmawa.vue · VisiMisi.vue · profil.data.ts
-│   │   ├── zona-kampus/             #   ProgramList.vue · CariTemanForm.vue · zona-kampus.data.ts
-│   │   ├── media/                   #   LombaList.vue · LaporanList.vue · SocialLinks.vue · media.data.ts
-│   │   └── kontak/                  #   AspirasiForm.vue · PelaporanForm.vue · WaProdiList.vue · kontak.data.ts
+│   │   │   └── mahasiswa-profile-card.vue · mahasiswa-profile-form.vue · index.ts
+│   │   ├── landing/                 #   section beranda: hero-section.vue · …-section.vue
+│   │   ├── profil/                  #   tentang-ut.vue · tentang-ormawa.vue · visi-misi.vue · profil.data.ts
+│   │   ├── zona-kampus/             #   program-list.vue · cari-teman-form.vue · zona-kampus.data.ts
+│   │   ├── media/                   #   lomba-list.vue · laporan-list.vue · social-links.vue · media.data.ts
+│   │   └── kontak/                  #   aspirasi-form.vue · pelaporan-form.vue · wa-prodi-list.vue · kontak.data.ts
 │   │
 │   ├── components/                  # ③ LINTAS FITUR saja
 │   │   ├── ui/                      #   🔒 KLIPING (via CLI)
 │   │   ├── layout/                  #   datar
-│   │   │   ├── SiteHeader.vue · SiteMobileNav.vue · SiteFooter.vue · AuthAction.vue
-│   │   │   └── DashboardSidebar.vue · DashboardTopbar.vue · NavUser.vue
+│   │   │   ├── site-header.vue · site-mobile-nav.vue · site-footer.vue · auth-action.vue
+│   │   │   └── dashboard-sidebar.vue · dashboard-topbar.vue · nav-user.vue
 │   │   └── shared/
-│   │       ├── AppImage.vue · CookieConsent.vue · RichTextEditor.vue
-│   │       └── PageHeader.vue · EmptyState.vue · ConfirmDialog.vue
+│   │       ├── app-image.vue · cookie-consent.vue · rich-text-editor.vue
+│   │       └── page-header.vue · empty-state.vue · confirm-dialog.vue
 │   │
 │   ├── layouts/        default.vue · auth.vue · dashboard.vue
 │   ├── middleware/     auth.ts
 │   ├── plugins/        firebase.client.ts · auth-session.server.ts · ssr-width.ts · analytics.client.ts
-│   ├── composables/    useConsent.ts · useUpload.ts        # (eks useStorage)
+│   ├── composables/    use-consent.ts · use-upload.ts        # (eks useStorage)
 │   ├── services/       firebase.ts                         # satu-satunya init Firebase client
 │   ├── stores/         auth.ts                             # Pinia
 │   ├── constants/      nav.ts · dashboard-menu.ts · access-modules.ts · cookies.ts
@@ -358,7 +359,7 @@ useSeoMeta({ title: 'Kelola Organisasi' })
 </template>
 ```
 
-`OrganizationTable.vue` (UI) → `useOrganizations.ts` (state/loading/error) →
+`organization-table.vue` (UI) → `use-organizations.ts` (state/loading/error) →
 `organizations.service.ts` (query Firestore saja).
 
 ### 4.2 Auto-import
@@ -369,8 +370,11 @@ components: [
   { path: '~/components', pathPrefix: false },
   { path: '~/features', pathPrefix: false, extensions: ['.vue'] },
 ],
-imports: { dirs: ['features/*/use*.ts', 'stores', 'utils', 'constants'] },
+imports: { dirs: ['features/*/use-*.ts', 'stores', 'utils', 'constants'] },
 ```
+
+Karena `pathPrefix: false`, **nama file komponen harus unik di seluruh app** — beri awalan domain
+(`article-card.vue`, `user-table.vue`, `site-header.vue`). Nuxt akan error/peringatan bila ada nama ganda.
 
 `*.service.ts` dan `*.data.ts` **tidak** di-auto-import — import eksplisit
 supaya dependensi Firebase & sumber konten terlihat jelas (R8).
@@ -379,15 +383,15 @@ supaya dependensi Firebase & sumber konten terlihat jelas (R8).
 
 | Baseline | Target |
 |---|---|
-| `components/Navbar.vue` (551) | `components/layout/SiteHeader.vue` + `SiteMobileNav.vue` + `AuthAction.vue` + `constants/nav.ts` |
-| `components/Footer.vue` | `components/layout/SiteFooter.vue` |
-| `components/admin/Sidebar.vue` · `HeaderProfile.vue` | `components/layout/DashboardSidebar.vue` · `NavUser.vue` + `constants/dashboard-menu.ts` |
-| `components/RichTextEditor.vue` | `components/shared/RichTextEditor.vue` |
-| `composables/useArticles.ts` (375) | `features/articles/useArticles.ts` + `articles.service.ts` |
+| `components/Navbar.vue` (551) | `components/layout/site-header.vue` + `site-mobile-nav.vue` + `auth-action.vue` + `constants/nav.ts` |
+| `components/Footer.vue` | `components/layout/site-footer.vue` |
+| `components/admin/Sidebar.vue` · `HeaderProfile.vue` | `components/layout/dashboard-sidebar.vue` · `nav-user.vue` + `constants/dashboard-menu.ts` |
+| `components/RichTextEditor.vue` | `components/shared/rich-text-editor.vue` |
+| `composables/useArticles.ts` (375) | `features/articles/use-articles.ts` + `articles.service.ts` |
 | `composables/useOrganizations.ts` | `features/organizations/…` |
 | `composables/usePengurus.ts` | `features/pengurus/…` |
 | `composables/useUsers.ts` · `useActivityLog.ts` | `features/users/…` |
-| `composables/useStorage.ts` | `composables/useUpload.ts` |
+| `composables/useStorage.ts` | `composables/use-upload.ts` |
 | `plugins/firebase.client.ts` (init + auth listener) | `services/firebase.ts` + `stores/auth.ts` + plugin tipis |
 | `middleware/auth.ts` (`normalizeRole`) | tetap + `utils/role.ts` |
 | `layouts/admin.vue` | `layouts/dashboard.vue` (alias `admin` dijaga selama transisi) |
@@ -495,7 +499,7 @@ dibungkus satu fungsi `useAuth().logout()` supaya 4 tempat logout lama memanggil
 
 ### 6.4 Tombol **Dashboard** di landing page
 
-`components/layout/AuthAction.vue` — satu komponen, dipakai navbar
+`components/layout/auth-action.vue` — satu komponen, dipakai navbar
 desktop & mobile (menggantikan 2 tombol `to="/login/admin"` di Navbar.vue):
 
 | State | Tampil |
@@ -521,7 +525,7 @@ Diadaptasi dari `Fibidy-Client/src/components/shared/cookie-consent.tsx`, dibang
 dengan Kliping (`banner-03` atau `card` + `button`, bukan modal penuh supaya
 tidak menghalangi landing):
 
-- File: `app/components/shared/CookieConsent.vue`, dirender sekali di `app.vue`
+- File: `app/components/shared/cookie-consent.vue`, dirender sekali di `app.vue`
   dalam `<ClientOnly>` (hindari hydration mismatch), muncul setelah 600 ms.
 - Cookie: `ormawa_consent` = `all` | `essential`, `max-age` 1 tahun, `SameSite=Lax`,
   `Path=/` — dibaca via `useCookie('ormawa_consent')` (SSR-aware).
@@ -542,7 +546,7 @@ nama file berspasi (`Background ormawa.png`, `ZAENAL ARIFIN.jpg`,
 
 Strategi:
 
-1. **`AppImage.vue`** (`components/shared/`) — satu-satunya pintu gambar (R15).
+1. **`app-image.vue`** (`components/shared/`) — satu-satunya pintu gambar (R15).
    Props: `src, alt, width, height, sizes, priority, fit`. Di dalamnya `<NuxtImg>`:
    - default `loading="lazy"` `decoding="async"`, `format="webp"`, `placeholder` blur
    - `priority` → `loading="eager"` `fetchpriority="high"` + `preload`
@@ -640,10 +644,10 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 |---|---|
 | Bahasa | TypeScript `strict`, `<script setup lang="ts">` di semua SFC |
 | Urutan SFC | `<script setup>` → `<template>` → `<style scoped>` (opsional, hindari) |
-| Nama komponen | PascalCase (`ArticleCard.vue`); komponen Kliping ikut gaya Kliping |
-| Nama composable | `useXxx.ts` (camelCase) — konsisten dengan app lama |
-| Nama service | `xxx.service.ts`, ekspor fungsi murni (tanpa state Vue) |
-| Nama file lain | kebab-case (`access-modules.ts`, `format-date.ts`) |
+| Nama file | **kebab-case untuk SEMUA file buatan kita**: `article-card.vue`, `use-articles.ts`, `articles.service.ts`, `media.data.ts`, `site-header.vue` |
+| Nama komponen di template | tetap PascalCase — Nuxt otomatis mengubah `article-card.vue` jadi `<ArticleCard />` |
+| Nama export | composable `useArticles` (camelCase) dari file `use-articles.ts`; service ekspor fungsi murni (tanpa state Vue) |
+| Pengecualian | `components/ui/**` (gaya Kliping, dari CLI, PascalCase); folder `pages/` yang terikat URL lama (`Highlight-terkini`, `wa_prodi_2026_2`) |
 | Folder rute | ikut URL lama apa adanya (termasuk `Highlight-terkini`, `wa_prodi_2026_2`) |
 | Props/emit | `defineProps<…>()` + `defineEmits<…>()` bertipe |
 | State global | Pinia (`stores/`) — `useState` hanya untuk hal kecil SSR-safe |
@@ -687,7 +691,7 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 - **DoD:** route parity identik; screenshot identik; tidak ada array menu di template.
 
 #### S3 · Feature data layer
-- Bentuk `features/*`; pindah & pecah composables jadi `useX.ts` + `x.service.ts` (§4.3).
+- Bentuk `features/*`; pindah & pecah composables jadi `use-x.ts` + `x.service.ts` (§4.3).
 - Semua akses Firestore dari pages dashboard (`getDocs` di admin-area, mahasiswa) pindah ke service.
 - **DoD:** `grep "firebase/" app/pages app/components` = 0; semua CRUD dashboard di-smoke-test.
 
@@ -716,8 +720,8 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 - **DoD:** login → tutup browser → buka `/beranda` → server kenal user; logout hapus cookie; redirect role sama; passkey & email-link jalan.
 
 #### S8 · Tombol Dashboard + Cookie Consent
-- `AuthAction.vue` (§6.4) di navbar desktop & mobile; kartu "sudah masuk" di `/login/*`.
-- `CookieConsent.vue` + `useConsent()` + gating analytics (§7).
+- `auth-action.vue` (§6.4) di navbar desktop & mobile; kartu "sudah masuk" di `/login/*`.
+- `cookie-consent.vue` + `useConsent()` + gating analytics (§7).
 - **DoD:** 3 state tombol benar, CLS ≈ 0; GA tidak termuat sebelum consent.
 
 #### S9 · Tailwind v4 + Kliping init
@@ -819,6 +823,7 @@ Pertanyaan untuk pemilik proyek (jawab di sini):
 |---|---|---|---|---|---|
 | — | Golden Plan disusun | ✅ | 2026-11-01 | — | audit ormawautsby, kliping-ui, Fibidy-Client |
 | — | Golden Plan v2: struktur final datar | ✅ | 2026-11-01 | — | tanpa route group, fitur datar, Fase A struktur → Fase B perbaikan |
+| — | Golden Plan v2.1: penamaan file kebab-case | ✅ | 2026-11-01 | — | `nama-file.vue`, `use-nama.ts`; tag template tetap PascalCase |
 | S0 | Bootstrap baseline | ✅ | 2026-11-01 | — | import `ormawautsby@0e2ccca`; `test:routes` (33 page, 8 API) & `test:screens` (22 rute × desktop/mobile) baseline; build hijau |
 | S1 | Tooling & kebersihan root | ⬜ | | | |
 | S2 | Fondasi: constants/types/utils/services/store/layout | ⬜ | | | |
