@@ -41,38 +41,7 @@ const submitRegistration = () => {
 </script>
 
 <template>
-  <section class="relative bg-slate-900 text-white py-20 px-6 md:px-12 overflow-hidden">
-    <div
-      class="absolute inset-0 pointer-events-none opacity-20 mix-blend-overlay"
-      style="
-        background-image: url('/img/Background ormawa.png');
-        background-size: cover;
-        background-position: center;
-      "
-    ></div>
-
-    <div class="relative max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-12">
-      <div class="flex-1 space-y-6">
-        <div class="flex flex-wrap items-center gap-4 mb-4">
-          <div
-            class="inline-block px-3 py-1 bg-slate-800 border border-slate-700 text-red-400 text-xs font-bold uppercase tracking-wider rounded-full shadow-sm"
-          >
-            Regenerasi Kepengurusan
-          </div>
-        </div>
-        <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight">
-          Pendaftaran <br />
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-200"
-            >Pengurus HIMA / IMF</span
-          >
-        </h2>
-        <p class="text-slate-300 text-lg md:text-xl leading-relaxed max-w-2xl">
-          Ikatan Mahasiswa Fakultas (IMF) atau Himpunan Mahasiswa Jurusan (HIMA) adalah wadah
-          advokasi dan aspirasi program studi. Mari berkontribusi aktif memajukan jurusanmu!
-        </p>
-      </div>
-    </div>
-  </section>
+  <ZonaKampusImfHero />
 
   <!-- Main Content -->
   <div class="max-w-6xl mx-auto px-4 py-12">
@@ -255,75 +224,7 @@ const submitRegistration = () => {
         </div>
       </div>
 
-      <!-- Info Sidebar -->
-      <div class="lg:w-1/3">
-        <div class="sticky top-24 space-y-6">
-          <!-- Timeline -->
-          <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h3 class="text-lg font-bold text-slate-800 mb-6">Timeline Rekrutmen</h3>
-
-            <div class="relative border-l border-slate-200 ml-3 space-y-6">
-              <div class="relative">
-                <div
-                  class="absolute -left-[29px] bg-red-500 w-4 h-4 rounded-full border-4 border-white shadow-sm"
-                ></div>
-                <div class="pl-4">
-                  <p class="text-sm font-bold text-slate-800">Pendaftaran Online</p>
-                  <p class="text-xs text-slate-500 mt-1">1 - 15 Agustus 2026</p>
-                </div>
-              </div>
-              <div class="relative">
-                <div
-                  class="absolute -left-[29px] bg-slate-300 w-4 h-4 rounded-full border-4 border-white"
-                ></div>
-                <div class="pl-4">
-                  <p class="text-sm font-bold text-slate-500">Seleksi Berkas</p>
-                  <p class="text-xs text-slate-400 mt-1">16 - 18 Agustus 2026</p>
-                </div>
-              </div>
-              <div class="relative">
-                <div
-                  class="absolute -left-[29px] bg-slate-300 w-4 h-4 rounded-full border-4 border-white"
-                ></div>
-                <div class="pl-4">
-                  <p class="text-sm font-bold text-slate-500">Wawancara (Fit & Proper Test)</p>
-                  <p class="text-xs text-slate-400 mt-1">20 - 22 Agustus 2026</p>
-                </div>
-              </div>
-              <div class="relative">
-                <div
-                  class="absolute -left-[29px] bg-slate-300 w-4 h-4 rounded-full border-4 border-white"
-                ></div>
-                <div class="pl-4">
-                  <p class="text-sm font-bold text-slate-500">Pengumuman Kelulusan</p>
-                  <p class="text-xs text-slate-400 mt-1">25 Agustus 2026</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Syarat Umum -->
-          <div class="bg-red-50 border border-red-100 rounded-2xl p-6">
-            <h3 class="text-lg font-bold text-red-800 mb-4 flex items-center gap-2">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                ></path>
-              </svg>
-              Syarat Umum
-            </h3>
-            <ul class="text-sm text-red-700 space-y-2 list-disc pl-4">
-              <li>Mahasiswa aktif Universitas Terbuka Surabaya (Maksimal Semester 5).</li>
-              <li>Memiliki dedikasi tinggi dan komitmen selama 1 periode kepengurusan.</li>
-              <li>Mampu bekerja dalam tim maupun individu.</li>
-              <li>Tidak sedang menjabat sebagai pengurus inti di organisasi kampus lain.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <ZonaKampusImfInfo />
     </div>
   </div>
 </template>

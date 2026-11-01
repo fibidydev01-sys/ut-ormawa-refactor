@@ -46,3 +46,18 @@ export const PRODI_WA_LIST = [
     badgeClass: 'bg-blue-100 text-blue-700',
   },
 ]
+
+export const ASPIRASI_KATEGORI = [
+  { value: 'aspirasi', label: 'Aspirasi', icon: '📢' },
+  { value: 'kritik-saran', label: 'Kritik Saran', icon: '💡' },
+  { value: 'laporan', label: 'Laporan', icon: '⚠️' },
+  { value: 'pertanyaan', label: 'Pertanyaan', icon: '❓' },
+]
+
+export const PELAPORAN_KATEGORI = [
+  { value: 'pelanggaran', label: 'Pelanggaran Etika', icon: '🚨' },
+  { value: 'fasilitas', label: 'Masalah Fasilitas', icon: '🏢' },
+  { value: 'kegiatan', label: 'Kendala Kegiatan', icon: '📅' },
+  { value: 'bullying', label: 'Perundungan/Bullying', icon: '🛑' },
+  { value: 'lainnya', label: 'Lain-lain', icon: '📝' },
+]

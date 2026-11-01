@@ -103,3 +103,121 @@ export const HIMA_LIST = [
   { id: 'hima-ilmu-hukum', nama: 'HIMA Ilmu Hukum' },
   { id: 'hima-ilmu-komunikasi', nama: 'HIMA Ilmu Komunikasi' },
 ]
+
+// Mock Data: Papan Kolaborasi
+export const CARI_TEMAN_FEED = [
+  {
+    id: 1,
+    nama: 'Diana Putri',
+    jurusan: 'Sistem Informasi',
+    waktuLalu: '2 jam yang lalu',
+    kategori: 'Tim Lomba',
+    pesan:
+      'Halo teman-teman! Saya (UI/UX) lagi cari 2 orang Programmer (Frontend & Backend) untuk ikut lomba Gemastik bulan depan. Kalau ada yang minat dan serius pengen juara, DM ya! Nanti kita ngopi sambil bahas ide aplikasinya.',
+    avatar:
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-4.0.3&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+  },
+  {
+    id: 2,
+    nama: 'Rina Wijaya',
+    jurusan: 'Akuntansi',
+    waktuLalu: '5 jam yang lalu',
+    kategori: 'Teman Belajar',
+    pesan:
+      'Ada anak Maba Akuntansi yang domisili Surabaya Pusat/Barat? Mau bikin grup belajar bareng buat persiapan UTS Pengantar Akuntansi. Lebih enak belajar offline sih di cafe biar nyambung.',
+    avatar:
+      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+  },
+  {
+    id: 3,
+    nama: 'Andi Pratama',
+    jurusan: 'Ilmu Hukum',
+    waktuLalu: 'Kemarin',
+    kategori: 'Proyek Kelompok',
+    pesan:
+      'Butuh 1 orang lagi untuk kelompok tugas Hukum Tata Negara kelas B. Topik kita tentang Otonomi Daerah. Syaratnya: no free rider ya, harus mau bagi tugas dan diskusi aktif.',
+    avatar:
+      'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+  },
+]
+
+export interface MahasiswaProfile {
+  id: number
+  nama: string
+  jurusan: string
+  semester: number
+  isMaba: boolean
+  bio: string
+  hobi: string[]
+  avatar: string
+}
+
+/** Profil contoh di tab Jejaring (Cari Teman). */
+export const MAHASISWA_PROFILES: MahasiswaProfile[] = [
+  {
+    id: 1,
+    nama: 'Budi Santoso',
+    jurusan: 'Sistem Informasi',
+    semester: 1,
+    isMaba: true,
+    bio: 'Haloo! Maba baru di SI nih. Kalau ada tugas ngoding bareng boleh banget ajak-ajak ya!',
+    hobi: ['💻 Coding', '🎮 Valorant', '☕ Kopi'],
+    avatar:
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+  },
+  {
+    id: 2,
+    nama: 'Siti Rahmawati',
+    jurusan: 'Manajemen',
+    semester: 1,
+    isMaba: true,
+    bio: "Suka baca buku bisnis dan diskusi tentang marketing. Let's connect!",
+    hobi: ['📚 Membaca', '💡 Bisnis', '📸 Fotografi'],
+    avatar:
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+  },
+  {
+    id: 3,
+    nama: 'Andi Pratama',
+    jurusan: 'Ilmu Hukum',
+    semester: 3,
+    isMaba: false,
+    bio: 'Ketua UKM Debat. Suka diskusi isu terkini. Feel free untuk tanya-tanya seputar kampus.',
+    hobi: ['⚖️ Debat', '⚽ Futsal', '📰 Berita'],
+    avatar:
+      'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+  },
+  {
+    id: 4,
+    nama: 'Rina Wijaya',
+    jurusan: 'Akuntansi',
+    semester: 1,
+    isMaba: true,
+    bio: 'Cari teman belajar Pengantar Akuntansi. Jujur masih sering bingung sama jurnal haha.',
+    hobi: ['🎵 Musik', '🎬 Nonton Film', '🍲 Kuliner'],
+    avatar:
+      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+  },
+  {
+    id: 5,
+    nama: 'Kevin Anugrah',
+    jurusan: 'Ilmu Komunikasi',
+    semester: 5,
+    isMaba: false,
+    bio: 'Freelance Videographer. Open kolaborasi buat bikin konten atau film pendek.',
+    hobi: ['🎥 Videografi', '✈️ Traveling', '🎸 Gitar'],
+    avatar:
+      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+  },
+  {
+    id: 6,
+    nama: 'Diana Putri',
+    jurusan: 'Sistem Informasi',
+    semester: 1,
+    isMaba: true,
+    bio: 'UI/UX Enthusiast! Pengen ikut lomba desain aplikasi, yang jago ngoding ayo bikin tim.',
+    hobi: ['🎨 Desain', '📱 UI/UX', '🏸 Badminton'],
+    avatar:
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-4.0.3&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+  },
+]

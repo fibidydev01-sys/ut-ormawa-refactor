@@ -121,6 +121,18 @@ SCENARIOS.push({
     await mobilePanel(page).evaluate((el) => (el.scrollTop = el.scrollHeight))
   },
 })
+// Modal "Buat Profil" di Cari Teman (dirender setelah footer — urutan tumpukan penting)
+for (const vp of Object.keys(VIEWPORTS)) {
+  SCENARIOS.push({
+    name: `cari-teman.profile-modal.${vp}`,
+    route: '/zona-kampus/cari-teman',
+    vp,
+    action: async (page) => {
+      await page.getByRole('button', { name: /Buat Profil/ }).first().click()
+      await page.getByRole('button', { name: /Terbitkan Profil|Simpan/ }).first().waitFor()
+    },
+  })
+}
 for (const vp of Object.keys(VIEWPORTS)) {
   for (const route of DASHBOARD_ROUTES) {
     SCENARIOS.push({ name: `dash.super.${slug(route)}.${vp}`, route, vp, auth: 'superAdmin' })

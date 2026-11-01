@@ -1,0 +1,72 @@
+/* Gaya pengurus-chart.vue — dipisah dari SFC karena panjang (S4). Tetap scoped. */
+
+/* ── Member Card ─────────────────────────────────── */
+.member-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: white;
+  border-radius: 1.25rem;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f1f5f9;
+  padding: 1.5rem 1rem;
+  width: 200px;
+  transition: all 0.3s ease;
+}
+.member-card:hover {
+  box-shadow: 0 10px 32px rgba(59, 130, 246, 0.13);
+  transform: translateY(-4px);
+}
+.member-card-lg {
+  width: 230px;
+  padding: 1.75rem 1.25rem;
+}
+.member-card-sm {
+  width: 155px;
+  padding: 1.25rem 0.75rem;
+}
+
+/* ── Photo Ring ──────────────────────────────────── */
+.photo-ring {
+  width: 110px;
+  height: 110px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #2563eb, #60a5fa, #bfdbfe);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  flex-shrink: 0;
+}
+.member-card:hover .photo-ring {
+  transform: scale(1.06);
+  box-shadow: 0 8px 28px rgba(59, 130, 246, 0.3);
+}
+.photo-ring-lg {
+  width: 136px;
+  height: 136px;
+  padding: 5px;
+}
+.photo-ring-sm {
+  width: 84px;
+  height: 84px;
+  padding: 3px;
+}
+
+.photo-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  border: 3px solid white;
+}
+.photo-inner-lg {
+  border: 4px solid white;
+}
+.photo-inner-sm {
+  border: 2px solid white;
+}

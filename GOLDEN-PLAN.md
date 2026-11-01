@@ -717,6 +717,15 @@ selalu dari `app/constants/*` dan data lama; jangan ada teks contoh tersisa.
 #### S4 · Pecah pages publik
 - `beranda` → `features/landing/*Section.vue`; profil, zona-kampus, media, kontak → komponen + `*.data.ts`; `berita/[slug]` & `media/artikel` → `features/articles`; struktur pengurus → `features/pengurus`.
 - **DoD:** semua page publik ≤ 80 baris; screenshot identik.
+- **Catatan hasil S4:**
+  - Pola page publik: `<main>` + `<SiteHeader />` + 1 komponen fitur + `<SiteFooter />` + `useSeoMeta`. Markup dipindah **verbatim** (dipotong per rentang baris oleh skrip), bukan diketik ulang.
+  - Komponen fitur di-auto-import dari `app/features/**` (`pathPrefix: false`), composable `features/*/use-*.ts`.
+  - **Daftar** (UKM, HIMA, lomba, laporan, prodi WA, kategori, statistik beranda, profil contoh) → `<fitur>.data.ts`. Teks prosa satu kali pakai tetap di template komponennya — memecahnya ke data tidak menambah kejelasan.
+  - CSS panjang (tentang-ut, tentang-ormawa, pengurus-chart) → `<style scoped src="./x.css">`: tetap scoped, SFC jadi pendek.
+  - `/berita/[slug]`: fetch SSR + fallback client + SEO/JSON-LD → `features/articles/use-article-detail.ts`; tampilan → `article-detail.vue`. E2E kini juga mengunci `<meta property="article:author">` & JSON-LD (diverifikasi dulu di build lama).
+  - Modal "Buat Profil" Cari Teman ternyata dirender **setelah** `<SiteFooter />`. Supaya urutan tumpukan (di atas tombol melayang "Tanya Kami") tetap sama, modal di-`<Teleport to="#teleports">` (bukan `body` — SSR Nuxt menaruh teleport `body` di AWAL body) dan diberi kelas `font-sans text-slate-800` yang dulu diwarisi dari `<main>`. Ditambah 2 skenario screenshot yang baseline-nya diambil dari build commit sebelumnya (git worktree), plus uji alur submit lama vs baru (identik).
+  - Helper tanggal/ringkasan artikel disatukan di `features/articles/article-format.ts` (dulu 3 salinan).
+  - Kode mati warisan dibuang hanya bila pasti tak terjangkau: ref `waGrupOsmb`, import `useRoute` di aspirasi, CSS `.scrollbar-hide`.
 
 #### S5 · Pecah pages auth & dashboard
 - `login/admin` (471) → `LoginAdminForm`/`LoginPasskey`/`LoginEmailLink`; `login/mahasiswa` → `LoginGoogle`.
@@ -828,6 +837,7 @@ Temuan saat audit kode baseline (belum diubah — sesuai R1):
 | T18 | `firestore.rules` **tidak punya aturan untuk `activityLogs`** → semua `logActivity()` ditolak diam-diam, panel "Aktivitas" admin-area & mahasiswa selalu kosong | Dikunci E2E. Usulan: tambah rule (tulis: user login untuk dirinya sendiri; baca: SUPER_ADMIN / pemilik) — butuh persetujuan |
 | T19 | Rules `users` hanya mengizinkan buat dokumen sendiri dengan `role == 'ADMIN'` & update hanya `full_name` → **simpan profil mahasiswa selalu gagal** dan login **magic link**/**Google** pertama kali gagal membuat dokumen mahasiswa (user tetap ter-login di Auth, tapi muncul pesan error) | Dikunci E2E. Perlu keputusan desain rules mahasiswa |
 | T20 | WebAuthn server di-hardcode `rpID: 'localhost'`, origin `http://localhost:3000` → **login & daftar sidik jari tidak bisa jalan di domain produksi** | Fase B: ambil dari `runtimeConfig` (`siteUrl`). Uji ulang di S14 |
+| T22 | Isi artikel dirender dengan `v-html` dari HTML editor TipTap — admin mana pun yang boleh menulis artikel bisa menyisipkan skrip (*stored XSS*) | Fase B: sanitasi saat render (mis. DOMPurify) atau saat simpan — butuh persetujuan |
 | T12 | Tailwind v4 mengubah beberapa nama kelas | `@tailwindcss/upgrade` + screenshot diff di S9 |
 | T13 | 🟠 `create-admin.js` berisi password SUPER_ADMIN hardcoded (`SuperAdmin123!`) dan sudah ada di riwayat git | ✅ S1: `scripts/create-admin.js` kini baca `ADMIN_EMAIL`/`ADMIN_PASSWORD` dari env. ⚠ Password lama tetap ada di riwayat git `ormawautsby` & repo ini → **ganti password akun itu di produksi bila masih dipakai** |
 | T14 | 🟠 Dashboard (`admin-area/index.vue`, `kelola-user.vue`) menampilkan `user.password` — artinya password tersimpan **plaintext** di dokumen Firestore `users` | Fitur dibekukan (R1) selama Fase A; usulan hapus field & tampilan ini setelah Fase A — butuh persetujuan (Q5) |
@@ -853,7 +863,7 @@ Pertanyaan untuk pemilik proyek (jawab di sini):
 | S1 | Tooling & kebersihan root | ✅ | 2026-11-01 | — | ESLint 0 error / 299 warning warisan; typecheck ratchet 26 error warisan di 8 file; script → `scripts/` (+`legacy/`); `docs/database.md`; README; CI `check.yml`; T13 diperbaiki di script |
 | S2 | Fondasi: constants/types/utils/services/store/layout | ✅ | 2026-11-01 | — | Navbar 551 baris → 7 komponen ≤ 177 baris + `constants/nav.ts`; Sidebar/HeaderProfile/admin layout → `dashboard-*`/`nav-user` + `constants/dashboard-menu.ts`; Pinia `stores/auth.ts`; `services/firebase.ts`; TipTap disamakan 3.32.2 (typecheck 26 → 19); screenshot parity diperluas ke 71 skenario (dashboard + menu) — semua identik |
 | S3 | Feature data layer | ✅ | 2026-11-01 | — | 6 composable lama → `features/{articles,organizations,pengurus,users,auth}` (service + `use-*.ts` + `index.ts`) + `composables/use-{firebase,upload}.ts` + `services/storage.ts`; 0 import `firebase/*` di pages/components/layouts; E2E Firebase Emulator 17 skenario + 71 screenshot identik; typecheck 19 → 17 |
-| S4 | Pecah pages publik | ⬜ | | | |
+| S4 | Pecah pages publik | ✅ | 2026-11-01 | — | 19 page publik → shell ≤ 61 baris (total 448 baris, dulu ±4.400); 41 komponen fitur ≤ 250 baris + `*.data.ts` + CSS besar via `<style scoped src>`; screenshot 73/73 identik (+ skenario modal Cari Teman, baseline dari build lama); E2E 17/17; typecheck 17 → 14 |
 | S5 | Pecah pages auth & dashboard | ⬜ | | | |
 | S6 | routeRules + SSR data publik | ⬜ | | | |
 | S7 | Session cookie `__session` | ⬜ | | | |

@@ -84,6 +84,15 @@ export const ARTICLE_SCENARIOS = [
         html.includes('Juara Lomba Robot 2026') && html.includes('Tim robotika menang.'),
         'SSR /berita tidak berisi artikel',
       )
+      assert(
+        /<meta[^>]+property="article:author"[^>]+content="UKM Robotika"/.test(html) &&
+          (html.match(/property="article:author"/g) || []).length === 1,
+        'meta article:author SSR berubah',
+      )
+      assert(
+        html.includes('"@type":"NewsArticle"') && html.includes('"headline":"Juara Lomba Robot 2026"'),
+        'JSON-LD NewsArticle hilang',
+      )
     },
   },
   {

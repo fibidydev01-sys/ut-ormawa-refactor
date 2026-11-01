@@ -53,7 +53,11 @@ export const ADMIN_SCENARIOS = [
         'akun Auth tidak dibuat lewat /api/create-user',
         30_000,
       )
-      const doc = (await admin.db.doc(`users/${created.uid}`).get()).data()
+      // API membuat akun Auth dulu, baru dokumen Firestore → tunggu dokumennya
+      const doc = await eventually(
+        async () => (await admin.db.doc(`users/${created.uid}`).get()).data(),
+        'dokumen users tidak dibuat lewat /api/create-user',
+      )
       assert(
         doc.role === 'ADMIN' && doc.organization_id === 'robotika',
         `dokumen user salah: ${JSON.stringify(doc)}`,

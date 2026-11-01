@@ -10,7 +10,6 @@ import { ref, computed } from 'vue'
 
 const searchQuery = ref('')
 
-
 const filteredProdi = computed(() => {
   if (!searchQuery.value.trim()) return prodiList
   const q = searchQuery.value.toLowerCase()
