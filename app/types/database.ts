@@ -14,6 +14,7 @@ import type { Timestamp } from 'firebase/firestore'
 
 /** Re-export supaya page/komponen tidak meng-import firebase/* langsung (R8). */
 export type { Timestamp }
+export type { User as AuthUser } from 'firebase/auth'
 
 // ────────────────────────────────────────────────────────────
 // ENUM / LITERAL TYPES

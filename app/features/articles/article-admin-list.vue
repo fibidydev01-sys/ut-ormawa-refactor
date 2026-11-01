@@ -4,8 +4,8 @@
 -->
 
 <script setup lang="ts">
+import type { AuthUser, ArticleDocument, AppError  } from '~/types/database'
 import { ref, onMounted } from 'vue'
-import type { ArticleDocument, AppError } from '~/types/database'
 import { getUserRecord } from '~/features/users'
 
 const { getAllArticles, getArticlesByOrganization, deleteArticle } = useArticles()
@@ -16,7 +16,7 @@ const isLoading = ref<boolean>(true)
 const pageError = ref<string>('')
 
 const userRole = useState<string>('userRole')
-const firebaseUser = useState<any>('firebaseUser')
+const firebaseUser = useState<AuthUser | null>('firebaseUser')
 
 const isDeleting = ref<boolean>(false)
 
