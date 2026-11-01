@@ -1,6 +1,10 @@
 // nuxt.config.ts
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
+
+  // Test layer (sesi palsu untuk screenshot dashboard) — HANYA untuk
+  // `npm run build:test`. Lihat tests/layer/nuxt.config.ts.
+  extends: process.env.ORMAWA_TEST === '1' ? ['./tests/layer'] : [],
   devtools: { enabled: true },
 
   // Aktifkan SSR agar rute API server bisa berjalan

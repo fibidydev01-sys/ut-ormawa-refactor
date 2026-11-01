@@ -13,7 +13,7 @@
     "format": "prettier --write",
     "format:check": "prettier --check",
     "typecheck": "node tests/typecheck.mjs",
-    "build:test": "NITRO_PRESET=node-server nuxt build",
+    "build:test": "ORMAWA_TEST=1 NITRO_PRESET=node-server nuxt build",
     "test:routes": "node tests/routes.mjs",
     "test:screens": "node tests/screens.mjs",
     "check": "npm run lint && npm run typecheck && npm run test:routes"
